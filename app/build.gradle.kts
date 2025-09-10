@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     `maven-publish`
+    kotlin("kapt")
 }
 
 android {
@@ -33,6 +34,10 @@ android {
         }
         buildConfigField("String", "MAPKIT_KEY", "\"$apiKey\"")
 
+    }
+
+    kapt {
+        arguments {arg("room.schemaLocation", "$projectDir/schemas")}
     }
 
     buildTypes {
@@ -69,5 +74,8 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation("androidx.room:room-runtime:2.8.0") // Библиотека "Room"
+    kapt("androidx.room:room-compiler:2.8.0") // Кодогенератор
+    implementation("androidx.room:room-ktx:2.8.0") // Дополнительно для Kotlin Coroutines, Kotlin Flows
 }
 
