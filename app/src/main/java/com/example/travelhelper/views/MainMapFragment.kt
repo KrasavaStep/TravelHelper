@@ -16,7 +16,6 @@ import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
 
-
 class MainMapFragment : Fragment() {
     private val locationPermissionRequestCode = 1000
     private val viewModel: MainMapViewModel by viewModels()
@@ -69,6 +68,7 @@ class MainMapFragment : Fragment() {
                 ) == PackageManager.PERMISSION_GRANTED
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
