@@ -2,19 +2,27 @@ package com.example.travelhelper.views
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.health.connect.datatypes.units.Length
 import androidx.fragment.app.viewModels
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
 import com.example.travelhelper.R
 import com.example.travelhelper.databinding.FragmentMainMapBinding
+import com.example.travelhelper.views.AttractionBottomSheet
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
+import com.yandex.runtime.image.ImageProvider.fromBitmap
 
 class MainMapFragment : Fragment() {
     private val locationPermissionRequestCode = 1000
@@ -40,7 +48,26 @@ class MainMapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentMainMapBinding.bind(view)
+        val point = Point(52.4221751, 31.0167343)
+        addPlacemark(point)
+
+        binding.testbtn.setOnClickListener {
+            showBottomSheet()
+        }
+
         checkLocationPermissions()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        MapKitFactory.getInstance().onStart()
+        binding.mapView.onStart()
+    }
+
+    override fun onStop() {
+        binding.mapView.onStop()
+        MapKitFactory.getInstance().onStop()
+        super.onStop()
     }
 
     private fun checkLocationPermissions() {
@@ -103,7 +130,6 @@ class MainMapFragment : Fragment() {
         binding.mapView.map.addInputListener(object : com.yandex.mapkit.map.InputListener {
             override fun onMapTap(map: com.yandex.mapkit.map.Map, point: Point) {
                 // Обработка тапа по карте
-                addPlacemark(point)
             }
 
             override fun onMapLongTap(map: com.yandex.mapkit.map.Map, point: Point) {
@@ -113,29 +139,33 @@ class MainMapFragment : Fragment() {
     }
 
     private fun addPlacemark(point: Point) {
-        val imageProvider = com.yandex.runtime.image.ImageProvider.fromResource(
-            requireContext(),
-            R.drawable.ic_launcher_foreground //TODO: add placemark
-        )
+        val marker = createBitmapFromVector(R.drawable.map_marker_svg)
+
+        val imageProvider = fromBitmap(marker)
 
         val placemark = binding.mapView.map.mapObjects.addPlacemark(point)
         placemark.setIcon(imageProvider)
+        placemark.opacity = 0.6f
+        placemark.setText("placeholder text")
         placemark.addTapListener { _, _ ->
-            // Обработка тапа по метке
+            Toast.makeText(requireContext(), "dfgdsfdsf", Toast.LENGTH_SHORT).show()
+            showBottomSheet()
             true
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        MapKitFactory.getInstance().onStart()
-        binding.mapView.onStart()
+    private fun showBottomSheet() {
+        val bottomSheet = AttractionBottomSheet()
+        bottomSheet.show(childFragmentManager, bottomSheet.tag)
     }
 
-    override fun onStop() {
-        binding.mapView.onStop()
-        MapKitFactory.getInstance().onStop()
-        super.onStop()
+    private fun createBitmapFromVector(art: Int): Bitmap? {
+        val drawable = ContextCompat.getDrawable(requireContext(), art) ?: return null
+        val bitmap = createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bitmap
     }
 
     companion object {

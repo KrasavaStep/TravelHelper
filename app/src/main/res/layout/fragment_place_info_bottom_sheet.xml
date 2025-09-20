@@ -13,7 +13,19 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_marginStart="0dp"
-        android:contentDescription="place_img" />
+        android:contentDescription="place_img"
+        />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/close_bottom_sheet_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="15dp"
+        android:layout_marginEnd="15dp"
+        android:src="@drawable/close_svg"
+        />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:layout_width="wrap_content"
@@ -26,12 +38,12 @@
         android:contentDescription="add_to_fav" />
 
     <ScrollView
+        android:id="@+id/attraction_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/place_img_view"
         android:layout_alignParentEnd="true"
         android:layout_alignParentStart="true"
-        android:layout_alignParentBottom="true"
         >
 
         <LinearLayout
@@ -41,19 +53,42 @@
 
             <TextView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:text="Время работы: c 9.00 до 18.00"
+                />
 
             <TextView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:text="стоимость посещения: 200 byn"
+                />
 
             <TextView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:text="Адрес: Ул. Жукова 58а"
+                />
+
+            <com.example.travelhelper.utils.ExpandableTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed venenatis lacus diam, sed commodo enim dignissim quis. Donec vitae vulputate arcu. Nullam a maximus ante. Morbi non orci id nisl dapibus facilisis. Curabitur porttitor massa auctor metus viverra venenatis. Sed tempor interdum mauris vel laoreet. Donec pulvinar purus sed nulla eleifend, ut tempor leo dictum. Nullam convallis pretium orci sed fermentum. Donec tempor enim in suscipit feugiat.
+
+Sed tristique suscipit hendrerit. Mauris vestibulum dui eget accumsan luctus. Aenean varius facilisis nulla, ut sollicitudin massa placerat eu. Nunc egestas nisl vel tortor elementum condimentum. Curabitur sed iaculis augue, vel malesuada tellus. Suspendisse sodales vel nibh fringilla viverra. Sed id sagittis neque, non tempor nunc. Morbi aliquet lectus et porttitor varius. Vivamus vitae nisl risus. Sed condimentum faucibus orci et volutpat."
+                />
 
         </LinearLayout>
 
     </ScrollView>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/attraction_scroll_view"
+        android:layout_marginTop="40dp"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:text="Построить маршрут" />
 
 
 </RelativeLayout>
