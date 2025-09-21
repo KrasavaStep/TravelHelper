@@ -4,9 +4,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.health.connect.datatypes.units.Length
 import androidx.fragment.app.viewModels
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -17,16 +17,23 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import com.example.travelhelper.R
 import com.example.travelhelper.databinding.FragmentMainMapBinding
-import com.example.travelhelper.views.AttractionBottomSheet
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
+import com.yandex.mapkit.map.InputListener
 import com.yandex.runtime.image.ImageProvider.fromBitmap
+import com.yandex.mapkit.map.Map
+import com.yandex.mapkit.map.MapObject
+import com.yandex.mapkit.map.MapObjectCollection
+import com.yandex.mapkit.map.MapObjectTapListener
+import com.yandex.mapkit.map.PlacemarkMapObject
 
 class MainMapFragment : Fragment() {
     private val locationPermissionRequestCode = 1000
     private val viewModel: MainMapViewModel by viewModels()
+
+    private val placemarks = mutableListOf<PlacemarkMapObject>()
 
     private var _binding: FragmentMainMapBinding? = null
     private val binding
@@ -35,7 +42,6 @@ class MainMapFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapKitFactory.initialize(requireContext())
-        // TODO: Use the ViewModel
     }
 
     override fun onCreateView(
@@ -48,26 +54,35 @@ class MainMapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentMainMapBinding.bind(view)
-        val point = Point(52.4221751, 31.0167343)
-        addPlacemark(point)
+
+        checkLocationPermissions()
+        setupObservers()
 
         binding.testbtn.setOnClickListener {
             showBottomSheet()
         }
-
-        checkLocationPermissions()
     }
 
     override fun onStart() {
         super.onStart()
         MapKitFactory.getInstance().onStart()
         binding.mapView.onStart()
+        Log.d("map", "createMap")
     }
 
     override fun onStop() {
         binding.mapView.onStop()
         MapKitFactory.getInstance().onStop()
+        Log.d("map", "stopMap")
         super.onStop()
+    }
+
+    override fun onDestroy() {
+        Log.d("map", "destroyMap")
+        placemarks.forEach { it.removeTapListener(onAttractionTapListener) }
+        placemarks.clear()
+        binding.mapView.mapWindow.map.removeInputListener(mapInputListener)
+        super.onDestroy()
     }
 
     private fun checkLocationPermissions() {
@@ -108,49 +123,68 @@ class MainMapFragment : Fragment() {
         }
     }
 
+    private fun setupObservers() {
+        viewModel.loadPlacemarks()
+        viewModel.placemarksData.observe(viewLifecycleOwner) { points ->
+            addPlacemark(points)
+        }
+    }
+
     private fun setupMap() {
         // Перемещаем камеру к нужной точке
         val targetPoint = Point(52.4171724, 30.9963954) // Gomel
-        binding.mapView.map.move(
+        binding.mapView.mapWindow.map.move(
             CameraPosition(targetPoint, 11.0f, 0.0f, 0.0f),
             Animation(Animation.Type.SMOOTH, 1f),
             null
         )
 
         // Включаем слои
-        binding.mapView.map.isRotateGesturesEnabled = true
-        binding.mapView.map.isZoomGesturesEnabled = true
-        binding.mapView.map.isScrollGesturesEnabled = true
+        binding.mapView.mapWindow.map.isRotateGesturesEnabled = true
+        binding.mapView.mapWindow.map.isZoomGesturesEnabled = true
+        binding.mapView.mapWindow.map.isScrollGesturesEnabled = true
 
         // Добавляем обработчики
-        setupMapListeners()
+        //setupMapListeners()
     }
 
+    private val mapInputListener = object: InputListener {
+        override fun onMapTap(p0: Map, p1: Point) {
+
+        }
+
+        override fun onMapLongTap(
+            p0: Map,
+            p1: Point
+        ) {
+
+        }
+
+    }
     private fun setupMapListeners() {
-        binding.mapView.map.addInputListener(object : com.yandex.mapkit.map.InputListener {
-            override fun onMapTap(map: com.yandex.mapkit.map.Map, point: Point) {
-                // Обработка тапа по карте
-            }
-
-            override fun onMapLongTap(map: com.yandex.mapkit.map.Map, point: Point) {
-                // Обработка долгого тапа
-            }
-        })
+        binding.mapView.mapWindow.map.addInputListener(mapInputListener)
     }
 
-    private fun addPlacemark(point: Point) {
+    private val onAttractionTapListener = MapObjectTapListener { mapObject, point ->
+        requireActivity().runOnUiThread {
+            Toast.makeText(requireContext(), "dfgdsfdsf", Toast.LENGTH_SHORT).show()
+            showBottomSheet()
+        }
+        true
+    }
+    private fun addPlacemark(points: List<Point>) {
         val marker = createBitmapFromVector(R.drawable.map_marker_svg)
 
         val imageProvider = fromBitmap(marker)
-
-        val placemark = binding.mapView.map.mapObjects.addPlacemark(point)
-        placemark.setIcon(imageProvider)
-        placemark.opacity = 0.6f
-        placemark.setText("placeholder text")
-        placemark.addTapListener { _, _ ->
-            Toast.makeText(requireContext(), "dfgdsfdsf", Toast.LENGTH_SHORT).show()
-            showBottomSheet()
-            true
+        points.forEachIndexed { index, point ->
+            val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
+                geometry = point
+                setIcon(imageProvider)
+                opacity = 0.6f
+                setText("placeholder text")
+            }
+            placemark.addTapListener((onAttractionTapListener))
+            placemarks.add(placemark)
         }
     }
 

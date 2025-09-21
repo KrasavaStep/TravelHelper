@@ -1,13 +1,10 @@
 package com.example.travelhelper.views
 
-import android.app.Fragment
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import com.example.travelhelper.R
-import com.example.travelhelper.databinding.FragmentMainMapBinding
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
