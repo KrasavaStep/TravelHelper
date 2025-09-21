@@ -67,18 +67,15 @@ class MainMapFragment : Fragment() {
         super.onStart()
         MapKitFactory.getInstance().onStart()
         binding.mapView.onStart()
-        Log.d("map", "createMap")
     }
 
     override fun onStop() {
         binding.mapView.onStop()
         MapKitFactory.getInstance().onStop()
-        Log.d("map", "stopMap")
         super.onStop()
     }
 
     override fun onDestroy() {
-        Log.d("map", "destroyMap")
         placemarks.forEach { it.removeTapListener(onAttractionTapListener) }
         placemarks.clear()
         binding.mapView.mapWindow.map.removeInputListener(mapInputListener)
@@ -167,7 +164,6 @@ class MainMapFragment : Fragment() {
 
     private val onAttractionTapListener = MapObjectTapListener { mapObject, point ->
         requireActivity().runOnUiThread {
-            Toast.makeText(requireContext(), "dfgdsfdsf", Toast.LENGTH_SHORT).show()
             showBottomSheet()
         }
         true
