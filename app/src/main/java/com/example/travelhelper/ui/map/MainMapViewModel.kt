@@ -1,4 +1,4 @@
-package com.example.travelhelper.views
+package com.example.travelhelper.ui.map
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel

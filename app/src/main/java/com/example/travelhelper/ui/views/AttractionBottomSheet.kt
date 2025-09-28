@@ -1,4 +1,4 @@
-package com.example.travelhelper.views
+package com.example.travelhelper.ui.views
 
 import android.os.Bundle
 import android.view.LayoutInflater

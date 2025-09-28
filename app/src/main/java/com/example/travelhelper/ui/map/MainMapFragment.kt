@@ -1,4 +1,4 @@
-package com.example.travelhelper.views
+package com.example.travelhelper.ui.map
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -6,17 +6,18 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.fragment.app.viewModels
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
+import com.example.travelhelper.MainActivity
 import com.example.travelhelper.R
 import com.example.travelhelper.databinding.FragmentMainMapBinding
+import com.example.travelhelper.ui.views.AttractionBottomSheet
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -24,12 +25,10 @@ import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.InputListener
 import com.yandex.runtime.image.ImageProvider.fromBitmap
 import com.yandex.mapkit.map.Map
-import com.yandex.mapkit.map.MapObject
-import com.yandex.mapkit.map.MapObjectCollection
 import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
 
-class MainMapFragment : Fragment() {
+class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val locationPermissionRequestCode = 1000
     private val viewModel: MainMapViewModel by viewModels()
 
@@ -57,10 +56,6 @@ class MainMapFragment : Fragment() {
 
         checkLocationPermissions()
         setupObservers()
-
-        binding.testbtn.setOnClickListener {
-            showBottomSheet()
-        }
     }
 
     override fun onStart() {
@@ -81,6 +76,18 @@ class MainMapFragment : Fragment() {
         binding.mapView.mapWindow.map.removeInputListener(mapInputListener)
         super.onDestroy()
     }
+
+    override fun onResume() {
+        super.onResume()
+        (activity as? MainActivity)?.setMenuConfig(this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        (activity as? MainActivity)?.setMenuConfig(null)
+    }
+
+    override fun shouldShowMenuItems(menu: Menu): Boolean = true
 
     private fun checkLocationPermissions() {
         if (hasLocationPermissions()) {
@@ -142,7 +149,7 @@ class MainMapFragment : Fragment() {
         binding.mapView.mapWindow.map.isScrollGesturesEnabled = true
 
         // Добавляем обработчики
-        //setupMapListeners()
+        setupMapListeners()
     }
 
     private val mapInputListener = object: InputListener {

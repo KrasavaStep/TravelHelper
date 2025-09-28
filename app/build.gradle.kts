@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     `maven-publish`
     kotlin("kapt")
+    kotlin("plugin.serialization") version "2.0.21"
 }
 
 android {
@@ -76,11 +77,24 @@ dependencies {
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("androidx.room:room-runtime:2.8.0") // Библиотека "Room"
     kapt("androidx.room:room-compiler:2.8.0") // Кодогенератор
     implementation("androidx.room:room-ktx:2.8.0") // Дополнительно для Kotlin Coroutines, Kotlin Flows
+
+    val navVersion = "2.9.5"
+    // Views/Fragments Integration
+    implementation("androidx.navigation:navigation-fragment:$navVersion")
+    implementation("androidx.navigation:navigation-ui:$navVersion")
+
+    // Feature module support for Fragments
+    implementation("androidx.navigation:navigation-dynamic-features-fragment:$navVersion")
+
+    // JSON serialization library, works with the Kotlin serialization plugin.
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 }
 

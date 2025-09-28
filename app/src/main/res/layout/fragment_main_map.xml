@@ -1,21 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".views.MainMapFragment">
+    tools:context=".ui.map.MainMapFragment"
+    android:id="@+id/map_fragment"
+    >
 
-<com.yandex.mapkit.mapview.MapView
-    android:id="@+id/map_view"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    />
+    <com.yandex.mapkit.mapview.MapView
+        android:id="@+id/map_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
-    <Button
-        android:id="@+id/testbtn"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/show_location"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="cdfsdfs"
-        />
+        android:layout_above="@+id/change_map_layout"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="@dimen/fab_margin"
+        android:layout_marginBottom="16dp"
+        app:srcCompat="@android:drawable/ic_menu_compass" />
 
-</FrameLayout>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/change_map_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="@dimen/fab_margin"
+        android:layout_marginBottom="16dp"
+        app:srcCompat="@android:drawable/ic_dialog_map" />
+
+</RelativeLayout>
