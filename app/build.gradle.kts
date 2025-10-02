@@ -96,5 +96,15 @@ dependencies {
 
     // JSON serialization library, works with the Kotlin serialization plugin.
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    //Retrofit
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.1.0")
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // For photos
+    implementation("com.github.bumptech.glide:glide:5.0.5")
 }
 

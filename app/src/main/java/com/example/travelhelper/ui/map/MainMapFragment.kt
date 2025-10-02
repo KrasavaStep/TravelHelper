@@ -14,10 +14,15 @@ import android.view.ViewGroup
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.travelhelper.MainActivity
 import com.example.travelhelper.R
+import com.example.travelhelper.data.network.OSMPlace
 import com.example.travelhelper.databinding.FragmentMainMapBinding
 import com.example.travelhelper.ui.views.AttractionBottomSheet
+import com.google.android.material.snackbar.Snackbar
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -27,6 +32,8 @@ import com.yandex.runtime.image.ImageProvider.fromBitmap
 import com.yandex.mapkit.map.Map
 import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
+import kotlinx.coroutines.flow.observeOn
+import kotlinx.coroutines.launch
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val locationPermissionRequestCode = 1000
@@ -55,7 +62,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         _binding = FragmentMainMapBinding.bind(view)
 
         checkLocationPermissions()
-        setupObservers()
+        setupObservers(view)
     }
 
     override fun onStart() {
@@ -127,10 +134,34 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
     }
 
-    private fun setupObservers() {
-        viewModel.loadPlacemarks()
+    private fun setupObservers(view: View) {
+        /*viewModel.loadPlacemarks()
         viewModel.placemarksData.observe(viewLifecycleOwner) { points ->
             addPlacemark(points)
+        }*/
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.loadAttractions("Homel")
+                viewModel.uiState.collect { uiState ->
+                    when (uiState) {
+                        is MainMapViewModel.AttractionsUiState.Error -> {
+                            binding.loadingView.visibility = View.VISIBLE
+                            Snackbar.make(view, uiState.exception.message.toString(), Snackbar.LENGTH_LONG).show()
+                        }
+                        is MainMapViewModel.AttractionsUiState.Loading -> {
+                            if (uiState.isLoading) {
+                                binding.loadingView.visibility = View.VISIBLE
+                            } else {
+                                binding.loadingView.visibility = View.GONE
+                            }
+                        }
+                        is MainMapViewModel.AttractionsUiState.Success -> {
+                            binding.loadingView.visibility = View.VISIBLE
+                            addPlacemark(uiState.attractions)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -175,16 +206,16 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
         true
     }
-    private fun addPlacemark(points: List<Point>) {
+    private fun addPlacemark(points: List<OSMPlace>) {
         val marker = createBitmapFromVector(R.drawable.map_marker_svg)
 
         val imageProvider = fromBitmap(marker)
         points.forEachIndexed { index, point ->
             val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
-                geometry = point
+                geometry = Point(point.latitude, point.longitude)
                 setIcon(imageProvider)
                 opacity = 0.6f
-                setText("placeholder text")
+                setText(point.name)
             }
             placemark.addTapListener((onAttractionTapListener))
             placemarks.add(placemark)
