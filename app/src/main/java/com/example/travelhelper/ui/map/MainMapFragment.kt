@@ -141,7 +141,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }*/
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.loadAttractions("Homel")
+                viewModel.loadAttractions("Гомель")
                 viewModel.uiState.collect { uiState ->
                     when (uiState) {
                         is MainMapViewModel.AttractionsUiState.Error -> {

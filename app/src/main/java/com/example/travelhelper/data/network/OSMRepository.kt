@@ -11,19 +11,13 @@ class OSMRepository {
     private val overpassService: OverpassAPI
 
     init {
-        val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(HttpLoggingInterceptor().apply {
+        val client = OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS).addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
-            })
-            .build()
+            }).build()
 
-        val overpassRetrofit = Retrofit.Builder()
-            .baseUrl("https://overpass-api.de")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
+        val overpassRetrofit = Retrofit.Builder().baseUrl("https://overpass-api.de").client(client)
+            .addConverterFactory(GsonConverterFactory.create()).build()
 
         /* Maybe in future
         val nominatimRetrofit = Retrofit.Builder()
@@ -36,19 +30,15 @@ class OSMRepository {
     }
 
     suspend fun getAttractions(cityName: String): List<OSMPlace> {
-        val query = """
-            [out:json][timeout:25];
-            area[name="$cityName"]->.searchArea;
-            (
-              node["tourism"](area.searchArea);
-              way["tourism"](area.searchArea);
-              relation["tourism"](area.searchArea);
-              node["historic"](area.searchArea);
-              way["historic"](area.searchArea);
-              relation["historic"](area.searchArea);
-            );
-            out center;
-        """.trimIndent()
+        val query = "[out:json][timeout:25];"+
+                "area[place=city][name=\"$cityName\"]->.searchArea;"+
+                "("+
+                  "node[historic=\"memorial\"](area.searchArea);"+
+                  "node[historic=\"monument\"](area.searchArea);"+
+                  "node[historic=\"castle\"](area.searchArea);"+
+                  "node[tourism=\"museum\"](area.searchArea);"+
+                ");"+
+            "out center;"
 
         return try {
             val response = overpassService.queryOverpass(query)
