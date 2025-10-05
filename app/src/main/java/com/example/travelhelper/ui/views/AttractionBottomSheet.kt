@@ -57,6 +57,6 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
     }
 
     override fun getTheme(): Int {
-        return R.style.Base_Theme_TravelHelper
+        return com.google.android.material.R.style.Theme_Design_BottomSheetDialog
     }
 }
