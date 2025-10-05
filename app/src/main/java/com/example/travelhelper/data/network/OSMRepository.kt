@@ -67,8 +67,9 @@ class OSMRepository {
             latitude = lat,
             longitude = lon,
             type = element.type,
-            description = element.tags["description"],
-            wikipedia = element.tags["wikipedia"],
+            description = element.tags["inscription"],
+            wikipedia = element.tags["subject:wikipedia"] ?: element.tags["wikipedia"],
+            wikidata = element.tags["subject:wikidata"] ?: element.tags["wikidata"],
             website = element.tags["website"]
         )
     }

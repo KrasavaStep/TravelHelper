@@ -9,5 +9,6 @@ data class OSMPlace(
     val type: String,
     val description: String?,
     val wikipedia: String?,
+    val wikidata: String?,
     val website: String?
 )

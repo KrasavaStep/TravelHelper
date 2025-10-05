@@ -12,15 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class MainMapViewModel : ViewModel() {
-    /*val placemarksData = MutableLiveData<List<Point>>()
-
-    fun loadPlacemarks() {
-        val points = listOf(
-            Point(52.4221751,31.0167343),
-            Point(52.4218218,31.0156507)
-        )
-        placemarksData.value = points
-    }*/
 
     private val repository = OSMRepository()
 

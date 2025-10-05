@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".views.PlaceInfoBottomSheetFragment">
+    tools:context=".ui.views.AttractionBottomSheet">
 
     <ImageView
         android:id="@+id/place_img_view"
@@ -52,29 +52,40 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/working_time_txt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Время работы: c 9.00 до 18.00"
                 />
 
             <TextView
+                android:id="@+id/price_txt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="стоимость посещения: 200 byn"
                 />
 
             <TextView
+                android:id="@+id/address_txt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Адрес: Ул. Жукова 58а"
                 />
 
             <com.example.travelhelper.utils.ExpandableTextView
+                android:id="@+id/description_txt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed venenatis lacus diam, sed commodo enim dignissim quis. Donec vitae vulputate arcu. Nullam a maximus ante. Morbi non orci id nisl dapibus facilisis. Curabitur porttitor massa auctor metus viverra venenatis. Sed tempor interdum mauris vel laoreet. Donec pulvinar purus sed nulla eleifend, ut tempor leo dictum. Nullam convallis pretium orci sed fermentum. Donec tempor enim in suscipit feugiat.
 
 Sed tristique suscipit hendrerit. Mauris vestibulum dui eget accumsan luctus. Aenean varius facilisis nulla, ut sollicitudin massa placerat eu. Nunc egestas nisl vel tortor elementum condimentum. Curabitur sed iaculis augue, vel malesuada tellus. Suspendisse sodales vel nibh fringilla viverra. Sed id sagittis neque, non tempor nunc. Morbi aliquet lectus et porttitor varius. Vivamus vitae nisl risus. Sed condimentum faucibus orci et volutpat."
+                />
+
+            <TextView
+                android:id="@+id/wiki_txt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Адрес: Ул. Жукова 58а"
                 />
 
         </LinearLayout>

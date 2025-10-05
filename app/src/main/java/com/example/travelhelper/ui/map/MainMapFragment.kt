@@ -202,7 +202,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
     private val onAttractionTapListener = MapObjectTapListener { mapObject, point ->
         requireActivity().runOnUiThread {
-            showBottomSheet()
+            showBottomSheet(mapObject.userData as OSMPlace)
         }
         true
     }
@@ -216,14 +216,15 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                 setIcon(imageProvider)
                 opacity = 0.6f
                 setText(point.name)
+                userData = point
             }
-            placemark.addTapListener((onAttractionTapListener))
+            placemark.addTapListener(onAttractionTapListener)
             placemarks.add(placemark)
         }
     }
 
-    private fun showBottomSheet() {
-        val bottomSheet = AttractionBottomSheet()
+    private fun showBottomSheet(userData: OSMPlace) {
+        val bottomSheet = AttractionBottomSheet(userData)
         bottomSheet.show(childFragmentManager, bottomSheet.tag)
     }
 

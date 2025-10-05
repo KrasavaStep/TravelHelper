@@ -4,11 +4,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import com.example.travelhelper.R
+import com.example.travelhelper.data.network.OSMPlace
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class AttractionBottomSheet : BottomSheetDialogFragment() {
+class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment() {
 
     /*interface BottomSheetListener {
         fun onDataSubmitted(data: String)
@@ -32,19 +34,17 @@ class AttractionBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
         val closeBtn = view.findViewById<FloatingActionButton>(R.id.close_bottom_sheet_btn)
 
-        /*val editText = view.findViewById<EditText>(R.id.editText)
-        val btnSubmit = view.findViewById<Button>(R.id.btnSubmit)
-        val btnClose = view.findViewById<Button>(R.id.btnClose)
+        val workingTimeTextView = view.findViewById<TextView>(R.id.working_time_txt)
+        val priceTextView = view.findViewById<TextView>(R.id.price_txt)
+        val addressTextView = view.findViewById<TextView>(R.id.address_txt)
+        val descriptionTextView = view.findViewById<TextView>(R.id.description_txt)
+        val wikiTextView = view.findViewById<TextView>(R.id.wiki_txt)
 
-        btnSubmit.setOnClickListener {
-            val text = editText.text.toString()
-            if (text.isNotEmpty()) {
-                listener?.onDataSubmitted(text)
-                dismiss()
-            } else {
-                Toast.makeText(requireContext(), "Введите текст", Toast.LENGTH_SHORT).show()
-            }
-        }*/
+        workingTimeTextView.text = userData.category
+        priceTextView.text = userData.type
+        addressTextView.text = userData.name
+        descriptionTextView.text = userData.description ?: userData.website ?: ""
+        wikiTextView.text = userData.wikipedia ?: userData.wikidata?: ""
 
         closeBtn.setOnClickListener {
             dismiss()
@@ -57,6 +57,6 @@ class AttractionBottomSheet : BottomSheetDialogFragment() {
     }
 
     override fun getTheme(): Int {
-        return com.google.android.material.R.style.Theme_Design_BottomSheetDialog
+        return R.style.Base_Theme_TravelHelper
     }
 }
