@@ -22,5 +22,8 @@ data class AttractionEntity(
     val discription: String,
     val foto: String,
     val dolgota: Float,
-    val shirota: Float
+    val shirota: Float,
+
+    @ColumnInfo(defaultValue = "0")
+    val isLiked: Boolean = false
 )

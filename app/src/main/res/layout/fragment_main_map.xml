@@ -1,32 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/map_fragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.map.MainMapFragment"
-    android:id="@+id/map_fragment"
-    >
+    tools:context=".ui.map.MainMapFragment">
 
     <com.yandex.mapkit.mapview.MapView
         android:id="@+id/map_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent" />
 
-    </com.yandex.mapkit.mapview.MapView>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/show_location"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="@dimen/fab_margin"
+        android:layout_marginBottom="88dp"
+        app:srcCompat="@android:drawable/ic_menu_compass" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/change_map_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="@dimen/fab_margin"
+        android:layout_marginBottom="16dp"
+        app:srcCompat="@android:drawable/ic_dialog_map" />
 
     <LinearLayout
         android:id="@+id/loading_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:visibility="gone"
-        android:padding="16dp"
+        android:layout_gravity="center"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:showDividers="beginning"
         android:background="@drawable/loading_shape"
-        >
+        android:padding="16dp"
+        android:showDividers="beginning"
+        android:visibility="gone">
+
         <ProgressBar
             android:layout_width="64dp"
             android:layout_height="64dp" />
@@ -34,31 +50,18 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="Идет загрузка данных"
-            android:textSize="24sp"
             android:gravity="center"
-            />
+            android:text="Идет загрузка данных"
+            android:textSize="24sp" />
     </LinearLayout>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/show_location"
-        android:layout_width="wrap_content"
+    <include
+        android:id="@+id/bottom_sheet_layout"
+        layout="@layout/fragment_place_info_bottom_sheet"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/change_map_layout"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="@dimen/fab_margin"
-        android:layout_marginBottom="16dp"
-        app:srcCompat="@android:drawable/ic_menu_compass" />
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        app:behavior_hideable="true"
+        app:behavior_peekHeight="0dp" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/change_map_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="@dimen/fab_margin"
-        android:layout_marginBottom="16dp"
-        app:srcCompat="@android:drawable/ic_dialog_map" />
-
-</RelativeLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

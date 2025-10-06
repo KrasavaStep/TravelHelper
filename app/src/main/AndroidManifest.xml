@@ -2,12 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET" /> <!-- Для точного местоположения (GPS) -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- Для приблизительного местоположения (сети WiFi/мобильные сети) -->
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /> <!-- Для Android 10+ может потребоваться -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <application
+        android:name=".App"
         android:usesCleartextTraffic="true"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

@@ -4,46 +4,65 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import androidx.fragment.app.viewModels
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
-import androidx.lifecycle.Lifecycle
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
+import com.example.travelhelper.App
 import com.example.travelhelper.MainActivity
 import com.example.travelhelper.R
-import com.example.travelhelper.data.network.OSMPlace
+import com.example.travelhelper.data.db.AttractionEntity
 import com.example.travelhelper.databinding.FragmentMainMapBinding
-import com.example.travelhelper.ui.views.AttractionBottomSheet
-import com.google.android.material.snackbar.Snackbar
+import com.example.travelhelper.utils.ExpandableTextView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.InputListener
-import com.yandex.runtime.image.ImageProvider.fromBitmap
-import com.yandex.mapkit.map.Map
 import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
-import kotlinx.coroutines.flow.observeOn
+import com.yandex.runtime.image.ImageProvider
 import kotlinx.coroutines.launch
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
-    private val locationPermissionRequestCode = 1000
-    private val viewModel: MainMapViewModel by viewModels()
-
-    private val placemarks = mutableListOf<PlacemarkMapObject>()
 
     private var _binding: FragmentMainMapBinding? = null
-    private val binding
-        get() = _binding!!
+    private val binding get() = _binding!!
+
+    private val viewModelFactory by lazy {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val dao = (requireActivity().application as App).db.getAttrationDao()
+                return MainMapViewModel(dao) as T
+            }
+        }
+    }
+    private val viewModel: MainMapViewModel by viewModels { viewModelFactory }
+
+    private val placemarkMap = mutableMapOf<PlacemarkMapObject, AttractionEntity>()
+    private val mapInputListener: InputListener = MapTapListener()
+
+    private val onAttractionTapListener = MapObjectTapListener { mapObject, _ ->
+        val placemark = mapObject as? PlacemarkMapObject ?: return@MapObjectTapListener true
+        val attractionEntity = placemarkMap[placemark]
+        if (attractionEntity != null) {
+            viewModel.selectAttraction(attractionEntity)
+        }
+        true
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,16 +73,72 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.fragment_main_map, container, false)
+        _binding = FragmentMainMapBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        _binding = FragmentMainMapBinding.bind(view)
-
         checkLocationPermissions()
-        setupObservers(view)
+        setupMapListeners()
+        setupObservers()
     }
+
+    private fun setupObservers() {
+        val bottomSheetView = binding.bottomSheetLayout.root
+        val bottomSheetBehavior = BottomSheetBehavior.from(bottomSheetView)
+
+        val likeButton = bottomSheetView.findViewById<ImageButton>(R.id.like_button)
+        val titleText = bottomSheetView.findViewById<TextView>(R.id.title_text)
+        val descriptionText = bottomSheetView.findViewById<ExpandableTextView>(R.id.description_text)
+
+        likeButton.setOnClickListener {
+            viewModel.onLikeClicked()
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.isCurrentPlaceLiked.collect { isLiked ->
+                val iconRes = if (isLiked) R.drawable.ic_circle_filled else R.drawable.ic_circle_outline
+                likeButton.setImageResource(iconRes)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.selectedAttraction.collect { attraction ->
+                if (attraction != null) {
+                    titleText.text = attraction.addres
+                    descriptionText.text = attraction.discription
+                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+                } else {
+                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+                }
+            }
+        }
+    }
+
+    private fun addPlacemarksOnMap(attractions: List<AttractionEntity>) {
+        if (!isAdded) return
+        Log.d("MAP_DEBUG", "Начинаем добавлять метки. Всего получено: ${attractions.size}")
+
+        val markerBitmap = createBitmapFromVector(R.drawable.map_marker_svg) ?: run {
+            Log.e("MAP_DEBUG", "Критическая ошибка: Не удалось создать иконку для метки (Bitmap).")
+            return
+        }
+        val imageProvider = ImageProvider.fromBitmap(markerBitmap)
+
+        attractions.forEach { attraction ->
+            val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
+                geometry = Point(attraction.shirota.toDouble(), attraction.dolgota.toDouble())
+                setIcon(imageProvider)
+                userData = attraction
+            }
+            placemark.addTapListener(onAttractionTapListener)
+            placemarkMap[placemark] = attraction
+        }
+        Log.d("MAP_DEBUG", "Добавление меток завершено. На карте должно быть ${placemarkMap.size} меток.")
+    }
+
+    private val locationPermissionRequestCode = 1000
 
     override fun onStart() {
         super.onStart()
@@ -77,11 +152,12 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         super.onStop()
     }
 
-    override fun onDestroy() {
-        placemarks.forEach { it.removeTapListener(onAttractionTapListener) }
-        placemarks.clear()
+    override fun onDestroyView() {
+        super.onDestroyView()
+        placemarkMap.keys.forEach { it.removeTapListener(onAttractionTapListener) }
+        placemarkMap.clear()
         binding.mapView.mapWindow.map.removeInputListener(mapInputListener)
-        super.onDestroy()
+        _binding = null
     }
 
     override fun onResume() {
@@ -101,10 +177,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
             setupMap()
         } else {
             requestPermissions(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ),
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
                 locationPermissionRequestCode
             )
         }
@@ -112,12 +185,10 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
     private fun hasLocationPermissions(): Boolean {
         return ActivityCompat.checkSelfPermission(
-            requireContext(),
-            Manifest.permission.ACCESS_FINE_LOCATION
+            requireContext(), Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+                    requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
     }
 
@@ -134,109 +205,42 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
     }
 
-    private fun setupObservers(view: View) {
-        /*viewModel.loadPlacemarks()
-        viewModel.placemarksData.observe(viewLifecycleOwner) { points ->
-            addPlacemark(points)
-        }*/
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.loadAttractions("Гомель")
-                viewModel.uiState.collect { uiState ->
-                    when (uiState) {
-                        is MainMapViewModel.AttractionsUiState.Error -> {
-                            binding.loadingView.visibility = View.VISIBLE
-                            Snackbar.make(view, uiState.exception.message.toString(), Snackbar.LENGTH_LONG).show()
-                        }
-                        is MainMapViewModel.AttractionsUiState.Loading -> {
-                            if (uiState.isLoading) {
-                                binding.loadingView.visibility = View.VISIBLE
-                            } else {
-                                binding.loadingView.visibility = View.GONE
-                            }
-                        }
-                        is MainMapViewModel.AttractionsUiState.Success -> {
-                            binding.loadingView.visibility = View.VISIBLE
-                            addPlacemark(uiState.attractions)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     private fun setupMap() {
-        // Перемещаем камеру к нужной точке
-        val targetPoint = Point(52.4171724, 30.9963954) // Gomel
+        Log.d("MAP_DEBUG", "Метод setupMap() вызван. Начинаем настройку карты и загрузку меток.")
         binding.mapView.mapWindow.map.move(
-            CameraPosition(targetPoint, 11.0f, 0.0f, 0.0f),
+            CameraPosition(Point(52.4171724, 30.9963954), 11.0f, 0.0f, 0.0f),
             Animation(Animation.Type.SMOOTH, 1f),
             null
         )
-
-        // Включаем слои
         binding.mapView.mapWindow.map.isRotateGesturesEnabled = true
-        binding.mapView.mapWindow.map.isZoomGesturesEnabled = true
-        binding.mapView.mapWindow.map.isScrollGesturesEnabled = true
 
-        // Добавляем обработчики
-        setupMapListeners()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val allAttractions = viewModel.getAllAttractionsFromDb()
+            addPlacemarksOnMap(allAttractions)
+        }
     }
 
-    private val mapInputListener = object: InputListener {
-        override fun onMapTap(p0: Map, p1: Point) {
-
+    private inner class MapTapListener : InputListener {
+        override fun onMapTap(map: com.yandex.mapkit.map.Map, point: com.yandex.mapkit.geometry.Point) {
+            viewModel.selectAttraction(null)
         }
 
-        override fun onMapLongTap(
-            p0: Map,
-            p1: Point
-        ) {
-
+        override fun onMapLongTap(map: com.yandex.mapkit.map.Map, point: com.yandex.mapkit.geometry.Point) {
+            // Ничего не делаем
         }
-
     }
+
     private fun setupMapListeners() {
         binding.mapView.mapWindow.map.addInputListener(mapInputListener)
     }
 
-    private val onAttractionTapListener = MapObjectTapListener { mapObject, point ->
-        requireActivity().runOnUiThread {
-            showBottomSheet()
-        }
-        true
-    }
-    private fun addPlacemark(points: List<OSMPlace>) {
-        val marker = createBitmapFromVector(R.drawable.map_marker_svg)
-
-        val imageProvider = fromBitmap(marker)
-        points.forEachIndexed { index, point ->
-            val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
-                geometry = Point(point.latitude, point.longitude)
-                setIcon(imageProvider)
-                opacity = 0.6f
-                setText(point.name)
-            }
-            placemark.addTapListener((onAttractionTapListener))
-            placemarks.add(placemark)
-        }
-    }
-
-    private fun showBottomSheet() {
-        val bottomSheet = AttractionBottomSheet()
-        bottomSheet.show(childFragmentManager, bottomSheet.tag)
-    }
-
     private fun createBitmapFromVector(art: Int): Bitmap? {
+        if (!isAdded) return null
         val drawable = ContextCompat.getDrawable(requireContext(), art) ?: return null
         val bitmap = createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight)
         val canvas = Canvas(bitmap)
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return bitmap
-    }
-
-    companion object {
-        fun mainMapFragmentInstance() = MainMapFragment()
     }
 }

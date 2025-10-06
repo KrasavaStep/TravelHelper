@@ -1,55 +1,44 @@
 package com.example.travelhelper.ui.map
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.travelhelper.data.network.OSMPlace
-import com.example.travelhelper.data.network.OSMRepository
-import com.yandex.mapkit.geometry.Point
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.example.travelhelper.data.db.AtractionDao
+import com.example.travelhelper.data.db.AttractionEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class MainMapViewModel : ViewModel() {
-    /*val placemarksData = MutableLiveData<List<Point>>()
+class MainMapViewModel(private val dao: AtractionDao) : ViewModel() {
 
-    fun loadPlacemarks() {
-        val points = listOf(
-            Point(52.4221751,31.0167343),
-            Point(52.4218218,31.0156507)
-        )
-        placemarksData.value = points
-    }*/
+    private val _selectedAttraction = MutableStateFlow<AttractionEntity?>(null)
+    val selectedAttraction: StateFlow<AttractionEntity?> = _selectedAttraction.asStateFlow()
 
-    private val repository = OSMRepository()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val isCurrentPlaceLiked: StateFlow<Boolean> = _selectedAttraction.flatMapLatest { attraction ->
+        attraction?.id?.let { dao.isPlaceLiked(it) } ?: flowOf(false)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
 
-    private val _uiState = MutableStateFlow<AttractionsUiState>(AttractionsUiState.Loading(true))
-    val uiState: StateFlow<AttractionsUiState> = _uiState
+    fun selectAttraction(attraction: AttractionEntity?) {
+        _selectedAttraction.value = attraction
+    }
 
-    fun loadAttractions(cityName: String) {
-        viewModelScope.launch {
-            try {
-                val attractionsList = repository.getAttractions(cityName)
-                _uiState.value = AttractionsUiState.Success(attractionsList)
-
-                if (attractionsList.isEmpty()) {
-                    val ex = Exception("Не найдено достопримечательностей в городе $cityName")
-                    _uiState.value = AttractionsUiState.Error(ex)
-                }
-            } catch (e: Exception) {
-                val ex = Exception("Ошибка загрузки: ${e.message}")
-                _uiState.value = AttractionsUiState.Error(ex)
-                _uiState.value = AttractionsUiState.Loading(false)
-            } finally {
-                _uiState.value = AttractionsUiState.Loading(false)
-            }
+    fun onLikeClicked() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val currentAttraction = _selectedAttraction.value ?: return@launch
+            val currentlyLiked = isCurrentPlaceLiked.value
+            dao.setLikedStatus(attractionId = currentAttraction.id, isLiked = !currentlyLiked)
         }
     }
 
-    sealed class AttractionsUiState {
-        data class Success(val attractions: List<OSMPlace>): AttractionsUiState()
-        data class Error(val exception: Throwable): AttractionsUiState()
-        data class Loading(val isLoading: Boolean): AttractionsUiState()
+    suspend fun getAllAttractionsFromDb(): List<AttractionEntity> {
+        return withContext(Dispatchers.IO) {
+            dao.getAllAttractions()
+        }
     }
 }
