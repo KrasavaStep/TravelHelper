@@ -40,6 +40,36 @@
             />
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/reload_attractions"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:background="@color/white"
+        android:visibility="gone"
+        >
+
+        <ImageView
+            android:id="@+id/reload_img"
+            android:layout_width="128dp"
+            android:layout_height="128dp"
+            android:src="@drawable/outline_autorenew"
+            android:layout_marginBottom="24dp"
+            />
+
+        <TextView
+            android:id="@+id/error_msg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textAlignment="center"
+            android:text="не найдено достопримечательностей в городе Гомель"
+            android:layout_margin="16dp"
+            />
+
+    </LinearLayout>
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/show_location"
         android:layout_width="wrap_content"

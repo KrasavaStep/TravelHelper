@@ -63,6 +63,10 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
         checkLocationPermissions()
         setupObservers(view)
+
+        binding.reloadImg.setOnClickListener {
+            setupObservers(view)
+        }
     }
 
     override fun onStart() {
@@ -135,28 +139,31 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     private fun setupObservers(view: View) {
-        /*viewModel.loadPlacemarks()
-        viewModel.placemarksData.observe(viewLifecycleOwner) { points ->
-            addPlacemark(points)
-        }*/
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.loadAttractions("Гомель")
                 viewModel.uiState.collect { uiState ->
                     when (uiState) {
                         is MainMapViewModel.AttractionsUiState.Error -> {
-                            binding.loadingView.visibility = View.VISIBLE
-                            Snackbar.make(view, uiState.exception.message.toString(), Snackbar.LENGTH_LONG).show()
+                            binding.reloadAttractions.visibility = View.VISIBLE
+                            binding.errorMsg.text = uiState.exception.message
+                            binding.changeMapLayout.visibility = View.GONE
+                            binding.showLocation.visibility = View.GONE
                         }
                         is MainMapViewModel.AttractionsUiState.Loading -> {
                             if (uiState.isLoading) {
                                 binding.loadingView.visibility = View.VISIBLE
+                                binding.reloadAttractions.visibility = View.GONE
+                                binding.changeMapLayout.visibility = View.GONE
+                                binding.showLocation.visibility = View.GONE
                             } else {
                                 binding.loadingView.visibility = View.GONE
                             }
                         }
                         is MainMapViewModel.AttractionsUiState.Success -> {
-                            binding.loadingView.visibility = View.VISIBLE
+                            binding.reloadAttractions.visibility = View.GONE
+                            binding.changeMapLayout.visibility = View.VISIBLE
+                            binding.showLocation.visibility = View.VISIBLE
                             addPlacemark(uiState.attractions)
                         }
                     }

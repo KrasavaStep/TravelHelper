@@ -70,7 +70,9 @@ class OSMRepository {
             description = element.tags["inscription"],
             wikipedia = element.tags["subject:wikipedia"] ?: element.tags["wikipedia"],
             wikidata = element.tags["subject:wikidata"] ?: element.tags["wikidata"],
-            website = element.tags["website"]
+            website = element.tags["website"] ?: element.tags["contact:website"],
+            openingHours = element.tags["opening_hours"],
+            isFee = !element.tags["fee"].isNullOrEmpty()
         )
     }
 

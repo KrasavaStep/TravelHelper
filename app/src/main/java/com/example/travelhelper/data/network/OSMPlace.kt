@@ -10,5 +10,7 @@ data class OSMPlace(
     val description: String?,
     val wikipedia: String?,
     val wikidata: String?,
-    val website: String?
+    val website: String?,
+    val openingHours: String?,
+    val isFee: Boolean = false
 )
