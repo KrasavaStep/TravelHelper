@@ -6,12 +6,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.example.travelhelper.R
 import com.example.travelhelper.data.network.OSMPlace
+import com.example.travelhelper.ui.map.MainMapViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlin.getValue
 
 class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment() {
+
+    private val viewModel: AttractionViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -25,6 +32,7 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val closeBtn = view.findViewById<FloatingActionButton>(R.id.close_bottom_sheet_btn)
+        val likeBtn = view.findViewById<FloatingActionButton>(R.id.like_btn)
 
         val workingTimeTextView = view.findViewById<TextView>(R.id.working_time_txt)
         val priceTextView = view.findViewById<TextView>(R.id.price_txt)
@@ -58,6 +66,10 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
 
         closeBtn.setOnClickListener {
             dismiss()
+        }
+
+        likeBtn.setOnClickListener {
+            //viewModel.addAttractionToDb(userData)
         }
     }
 

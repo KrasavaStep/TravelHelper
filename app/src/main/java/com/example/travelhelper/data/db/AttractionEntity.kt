@@ -16,11 +16,17 @@ import androidx.room.PrimaryKey
     ]
 )
 data class AttractionEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int,
-    val city_id: Int,
-    val addres: String,
-    val discription: String,
-    val foto: String,
-    val dolgota: Float,
-    val shirota: Float
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val name: String,
+    val category: String,
+    val latitude: Double,
+    val longitude: Double,
+    val type: String,
+    val description: String?,
+    val wikipedia: String?,
+    val wikidata: String?,
+    val website: String?,
+    val openingHours: String?,
+    val isFee: Boolean = false,
+    val isLiked: Boolean = false
 )
