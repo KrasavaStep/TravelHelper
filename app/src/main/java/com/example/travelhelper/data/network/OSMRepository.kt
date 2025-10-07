@@ -6,11 +6,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-class OSMRepository {
+class OSMRepository(private val overpassService: OverpassAPI) {
 
-    private val overpassService: OverpassAPI
-
-    init {
+    /*init {
         val client = OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS).addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
@@ -27,7 +25,7 @@ class OSMRepository {
             .build()*/
 
         overpassService = overpassRetrofit.create(OverpassAPI::class.java)
-    }
+    }*/
 
     suspend fun getAttractions(cityName: String): List<OSMPlace> {
         val query = "[out:json][timeout:25];"+

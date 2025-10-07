@@ -11,9 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class MainMapViewModel : ViewModel() {
-
-    private val repository = OSMRepository()
+class MainMapViewModel(private val repository: OSMRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AttractionsUiState>(AttractionsUiState.Loading(true))
     val uiState: StateFlow<AttractionsUiState> = _uiState

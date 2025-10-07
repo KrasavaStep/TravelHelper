@@ -34,10 +34,13 @@ import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
 import kotlinx.coroutines.flow.observeOn
 import kotlinx.coroutines.launch
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.core.qualifier.named
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val locationPermissionRequestCode = 1000
-    private val viewModel: MainMapViewModel by viewModels()
+
+    private val mainMapviewModel by viewModel<MainMapViewModel>(named("mainMapViewModel"))
 
     private val placemarks = mutableListOf<PlacemarkMapObject>()
 
@@ -141,8 +144,8 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private fun setupObservers(view: View) {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.loadAttractions("Гомель")
-                viewModel.uiState.collect { uiState ->
+                mainMapviewModel.loadAttractions("Гомель")
+                mainMapviewModel.uiState.collect { uiState ->
                     when (uiState) {
                         is MainMapViewModel.AttractionsUiState.Error -> {
                             binding.reloadAttractions.visibility = View.VISIBLE

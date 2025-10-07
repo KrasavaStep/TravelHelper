@@ -7,18 +7,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.example.travelhelper.R
 import com.example.travelhelper.data.network.OSMPlace
-import com.example.travelhelper.ui.map.MainMapViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.core.qualifier.named
 import kotlin.getValue
 
 class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment() {
 
-    private val viewModel: AttractionViewModel by viewModels()
+    private val viewModel by viewModel<BottomSheetViewModel>(named("bottomSheetViewModel"))
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -69,7 +68,7 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
         }
 
         likeBtn.setOnClickListener {
-            //viewModel.addAttractionToDb(userData)
+            viewModel.addLikedAttractionToDb(userData)
         }
     }
 

@@ -88,8 +88,8 @@ dependencies {
 
     val navVersion = "2.9.5"
     // Views/Fragments Integration
-    implementation("androidx.navigation:navigation-fragment:$navVersion")
-    implementation("androidx.navigation:navigation-ui:$navVersion")
+    //implementation("androidx.navigation:navigation-fragment:$navVersion")
+    //implementation("androidx.navigation:navigation-ui:$navVersion")
 
     // Feature module support for Fragments
     implementation("androidx.navigation:navigation-dynamic-features-fragment:$navVersion")
@@ -106,5 +106,11 @@ dependencies {
 
     // For photos
     implementation("com.github.bumptech.glide:glide:5.0.5")
+
+    //koin
+    val koinVersion = "4.1.0"
+    implementation("io.insert-koin:koin-core:${koinVersion}")
+    implementation("io.insert-koin:koin-android:${koinVersion}")
+    testImplementation("io.insert-koin:koin-test:${koinVersion}")
 }
 

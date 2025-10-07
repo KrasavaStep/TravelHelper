@@ -7,16 +7,19 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "atractions_table", indices = [Index("id")], foreignKeys = [
+    tableName = "atractions_table",
+    indices = [Index("id")],
+    /*foreignKeys = [
         ForeignKey(
             entity = CityEntity::class,
             parentColumns = ["id"],
-            childColumns = ["city_id"]
+            childColumns = ["cityId"]
         )
-    ]
+    ]*/
 )
 data class AttractionEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val cityId: Int = 0,
     val name: String,
     val category: String,
     val latitude: Double,

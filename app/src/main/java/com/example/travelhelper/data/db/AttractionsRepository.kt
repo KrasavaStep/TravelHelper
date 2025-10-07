@@ -3,7 +3,6 @@ package com.example.travelhelper.data.db
 import com.example.travelhelper.data.network.OSMPlace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.String
 
 class AttractionsRepository(private val attractionsDao: AtractionDao) {
 
@@ -14,11 +13,11 @@ class AttractionsRepository(private val attractionsDao: AtractionDao) {
         }
     }
 
-    suspend fun addAttractionToDB(attraction: OSMPlace) {
-        attractionsDao.addAttractionToDB(convertToAttractionEntity(attraction))
+    suspend fun addAttractionToDB(attraction: OSMPlace, isLiked: Boolean) {
+        attractionsDao.addAttractionToDB(convertToAttractionEntity(attraction, isLiked))
     }
 
-    private fun convertToAttractionEntity(attraction: OSMPlace): AttractionEntity {
+    private fun convertToAttractionEntity(attraction: OSMPlace, isLiked: Boolean): AttractionEntity {
         return AttractionEntity(
             name = attraction.name,
             category = attraction.category,
@@ -31,7 +30,7 @@ class AttractionsRepository(private val attractionsDao: AtractionDao) {
             website = attraction.website,
             openingHours = attraction.openingHours,
             isFee = attraction.isFee,
-            isLiked = true
+            isLiked = isLiked
         )
     }
 }
