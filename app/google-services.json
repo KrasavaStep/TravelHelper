@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "326056078277",
+    "project_id": "registration-ead5c",
+    "storage_bucket": "registration-ead5c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:326056078277:android:16efd061e21309fc91b9ac",
+        "android_client_info": {
+          "package_name": "com.example.travelhelper"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAFNoy3-QcW7fZLm46TLap-uhVNW_6HKY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

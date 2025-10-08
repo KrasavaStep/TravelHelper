@@ -18,6 +18,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TravelHelper">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -30,6 +31,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".data.network.registration.LoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TravelHelper.NoActionBar" />
+
+        <activity
+            android:name=".data.network.registration.RegisterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TravelHelper.NoActionBar" />
+
     </application>
 
 </manifest>

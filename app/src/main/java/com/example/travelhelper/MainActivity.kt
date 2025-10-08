@@ -2,6 +2,7 @@ package com.example.travelhelper
 
 import android.os.Bundle
 import android.view.Menu
+import android.widget.TextView
 import androidx.activity.viewModels
 import com.google.android.material.navigation.NavigationView
 import androidx.navigation.findNavController
@@ -18,11 +19,20 @@ import com.yandex.mapkit.MapKitFactory
 import kotlin.getValue
 import androidx.core.view.size
 import androidx.core.view.get
+import com.example.travelhelper.data.network.registration.LoginActivity
+import com.google.firebase.auth.FirebaseAuth
+import android.content.Intent
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+
+    private lateinit var auth: FirebaseAuth
 
     private val appBarViewModel: AppBarViewModel by viewModels()
 
@@ -35,6 +45,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapKitFactory.setApiKey(BuildConfig.MAPKIT_KEY)
+
+        auth = FirebaseAuth.getInstance()
+        if (auth.currentUser == null) {
+            val intent = Intent(this, LoginActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -71,6 +89,43 @@ class MainActivity : AppCompatActivity() {
                 return false;
             }
 
+            private fun updateNavHeader() {
+                val navView: NavigationView = binding.navView
+                val headerView = navView.getHeaderView(0)
+                val navUsername = headerView.findViewById<TextView>(R.id.nav_header_username)
+                val navUserEmail = headerView.findViewById<TextView>(R.id.textView)
+
+                val newUsername = intent.getStringExtra("USER_NAME")
+                val newEmail = intent.getStringExtra("USER_EMAIL")
+
+                if (newUsername != null && newEmail != null) {
+                    navUsername.text = newUsername
+                    navUserEmail.text = newEmail
+                } else {
+                    val user = auth.currentUser
+                    if (user != null) {
+                        val dbRef = FirebaseDatabase.getInstance().getReference("Users").child(user.uid)
+                        dbRef.addListenerForSingleValueEvent(object :
+                            ValueEventListener {
+                            override fun onDataChange(snapshot: DataSnapshot) {
+                                val usernameFromDb = snapshot.child("username").getValue(String::class.java)
+                                val emailFromDb = snapshot.child("email").getValue(String::class.java)
+
+                                if (usernameFromDb != null) {
+                                    navUsername.text = usernameFromDb
+                                }
+                                if (emailFromDb != null) {
+                                    navUserEmail.text = emailFromDb
+                                }
+                            }
+
+                            override fun onCancelled(error: DatabaseError) {
+                            }
+                        })
+                    }
+                }
+            }
+
             override fun onQueryTextChange(newText: String?): Boolean {
                 return false;
             }
@@ -94,5 +149,14 @@ class MainActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+    override fun onStart() {
+        super.onStart()
+        MapKitFactory.getInstance().onStart()
+    }
+
+    override fun onStop() {
+        MapKitFactory.getInstance().onStop()
+        super.onStop()
     }
 }
