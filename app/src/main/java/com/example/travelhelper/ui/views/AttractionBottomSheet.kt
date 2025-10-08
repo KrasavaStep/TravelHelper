@@ -1,7 +1,15 @@
 package com.example.travelhelper.ui.views
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,6 +22,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
 import kotlin.getValue
+import androidx.core.net.toUri
 
 class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment() {
 
@@ -57,10 +66,19 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
             descriptionTextView.visibility = View.GONE
         }
 
-        val siteText = userData.website ?: userData.wikipedia ?: userData.wikidata
-        wikiTextView.text = "${getString(R.string.get_more_info)}: $siteText"
-        if (siteText.isNullOrEmpty()) {
+        val siteText = if (!userData.website.isNullOrEmpty()) {
+            userData.website
+        } else if (!userData.wikipedia.isNullOrEmpty()) {
+            "https://be.wikipedia.org/wiki/${userData.wikipedia.substring(3)}"
+        } else if(!userData.wikidata.isNullOrEmpty()) {
+            "https://www.wikidata.org/wiki/${userData.wikidata}"
+        } else ""
+        //wikiTextView.text = "${getString(R.string.get_more_info)}: $siteText"
+        if (siteText.isEmpty()) {
             wikiTextView.visibility = View.GONE
+        } else {
+            wikiTextView.text = createSpannableString(siteText)
+            wikiTextView.movementMethod = LinkMovementMethod.getInstance()
         }
 
         closeBtn.setOnClickListener {
@@ -79,5 +97,32 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
 
     override fun getTheme(): Int {
         return R.style.AppBottomSheetDialogTheme
+    }
+
+    private fun createSpannableString(link: String): SpannableString {
+        val resString = "${getString(R.string.get_more_info)}: $link"
+        val spannableString = SpannableString(resString)
+        val clickableSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                // Обработка клика
+                val intent = Intent(Intent.ACTION_VIEW, link.toUri())
+                startActivity(intent)
+            }
+
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.color = Color.BLUE
+                ds.isUnderlineText = true
+            }
+        }
+
+        spannableString.setSpan(
+            clickableSpan,
+            0, // начальная позиция
+            resString.length, // конечная позиция
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+
+        return spannableString
     }
 }

@@ -15,7 +15,7 @@ val databaseModule = module {
 }
 
 fun provideDatabase(application: Application): AtractionDB {
-    return Room.databaseBuilder(application, AtractionDB::class.java, "currency_db")
+    return Room.databaseBuilder(application, AtractionDB::class.java, "attraction_db")
         .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
         .build()
 }

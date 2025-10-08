@@ -23,4 +23,9 @@
     <string name="attraction_no_fee"><b>Бесплатное</b> посещение</string>
 
     <string name="get_more_info"><b>Узнать больше</b></string>
+
+    <string name="lorem_ipsum">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed venenatis lacus diam, sed commodo enim dignissim quis. Donec vitae vulputate arcu. Nullam a maximus ante. Morbi non orci id nisl dapibus facilisis. Curabitur porttitor massa auctor metus viverra venenatis. Sed tempor interdum mauris vel laoreet. Donec pulvinar purus sed nulla eleifend, ut tempor leo dictum. Nullam convallis pretium orci sed fermentum. Donec tempor enim in suscipit feugiat.</string>
+
+    <string name="get_empty_dataset">Не найдено достопримечательностей в городе. Проверте правильность его написания</string>
+
 </resources>

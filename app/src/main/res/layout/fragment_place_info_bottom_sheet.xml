@@ -84,7 +84,7 @@
                 android:id="@+id/description_txt"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed venenatis lacus diam, sed commodo enim dignissim quis. Donec vitae vulputate arcu. Nullam a maximus ante. Morbi non orci id nisl dapibus facilisis. Curabitur porttitor massa auctor metus viverra venenatis. Sed tempor interdum mauris vel laoreet. Donec pulvinar purus sed nulla eleifend, ut tempor leo dictum. Nullam convallis pretium orci sed fermentum. Donec tempor enim in suscipit feugiat."
+                android:text="@string/lorem_ipsum"
                 android:padding="8dp"
                 />
 
@@ -93,6 +93,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Сайт: Wiki/com"
+                android:autoLink="web"
+                android:linksClickable="true"
                 android:padding="8dp"
                 />
 

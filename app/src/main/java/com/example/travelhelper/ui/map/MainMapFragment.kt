@@ -22,7 +22,6 @@ import com.example.travelhelper.R
 import com.example.travelhelper.data.network.OSMPlace
 import com.example.travelhelper.databinding.FragmentMainMapBinding
 import com.example.travelhelper.ui.views.AttractionBottomSheet
-import com.google.android.material.snackbar.Snackbar
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -32,14 +31,12 @@ import com.yandex.runtime.image.ImageProvider.fromBitmap
 import com.yandex.mapkit.map.Map
 import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
-import kotlinx.coroutines.flow.observeOn
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val locationPermissionRequestCode = 1000
-
     private val mainMapviewModel by viewModel<MainMapViewModel>(named("mainMapViewModel"))
 
     private val placemarks = mutableListOf<PlacemarkMapObject>()
@@ -68,7 +65,9 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         setupObservers(view)
 
         binding.reloadImg.setOnClickListener {
-            setupObservers(view)
+            mainMapviewModel.loadAttractions("Гомель")
+            binding.loadingView.visibility = View.VISIBLE
+            binding.reloadAttractions.visibility = View.GONE
         }
     }
 
@@ -144,7 +143,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private fun setupObservers(view: View) {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mainMapviewModel.loadAttractions("Гомель")
+                mainMapviewModel.loadAttractions(CITY)
                 mainMapviewModel.uiState.collect { uiState ->
                     when (uiState) {
                         is MainMapViewModel.AttractionsUiState.Error -> {
@@ -153,20 +152,23 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                             binding.changeMapLayout.visibility = View.GONE
                             binding.showLocation.visibility = View.GONE
                         }
+
                         is MainMapViewModel.AttractionsUiState.Loading -> {
                             if (uiState.isLoading) {
-                                binding.loadingView.visibility = View.VISIBLE
                                 binding.reloadAttractions.visibility = View.GONE
+                                binding.loadingView.visibility = View.VISIBLE
                                 binding.changeMapLayout.visibility = View.GONE
                                 binding.showLocation.visibility = View.GONE
                             } else {
                                 binding.loadingView.visibility = View.GONE
                             }
                         }
+
                         is MainMapViewModel.AttractionsUiState.Success -> {
                             binding.reloadAttractions.visibility = View.GONE
                             binding.changeMapLayout.visibility = View.VISIBLE
                             binding.showLocation.visibility = View.VISIBLE
+                            binding.loadingView.visibility = View.GONE
                             addPlacemark(uiState.attractions)
                         }
                     }
@@ -193,7 +195,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         setupMapListeners()
     }
 
-    private val mapInputListener = object: InputListener {
+    private val mapInputListener = object : InputListener {
         override fun onMapTap(p0: Map, p1: Point) {
 
         }
@@ -206,6 +208,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
 
     }
+
     private fun setupMapListeners() {
         binding.mapView.mapWindow.map.addInputListener(mapInputListener)
     }
@@ -216,6 +219,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
         true
     }
+
     private fun addPlacemark(points: List<OSMPlace>) {
         val marker = createBitmapFromVector(R.drawable.map_marker_svg)
 
@@ -249,5 +253,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
     companion object {
         fun mainMapFragmentInstance() = MainMapFragment()
+        private const val CITY = "Гомель"
     }
 }
