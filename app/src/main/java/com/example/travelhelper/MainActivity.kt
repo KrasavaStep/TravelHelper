@@ -1,5 +1,8 @@
 package com.example.travelhelper
 
+import android.Manifest
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.Menu
 import androidx.activity.viewModels
@@ -18,11 +21,14 @@ import com.yandex.mapkit.MapKitFactory
 import kotlin.getValue
 import androidx.core.view.size
 import androidx.core.view.get
+import com.example.travelhelper.utils.LocationService
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+
+    private val locationPermissionRequestCode = 1000
 
     private val appBarViewModel: AppBarViewModel by viewModels()
 
@@ -35,6 +41,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapKitFactory.setApiKey(BuildConfig.MAPKIT_KEY)
+        requestLocationPermissions()
+        startLocationService()
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -95,4 +103,36 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
+
+    override fun onDestroy() {
+        stopLocationService()
+        super.onDestroy()
+    }
+
+    private fun startLocationService() {
+        val intent = Intent(this, LocationService::class.java).apply {
+            action = LocationService.ACTION_START
+        }
+
+        startForegroundService(intent)
+    }
+
+    private fun stopLocationService() {
+        val intent = Intent(this, LocationService::class.java).apply {
+            action = LocationService.ACTION_STOP
+        }
+        startService(intent)
+    }
+
+    private fun requestLocationPermissions() {
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
+            locationPermissionRequestCode
+        )
+    }
+
+
 }

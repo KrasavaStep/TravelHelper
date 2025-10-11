@@ -1,20 +1,20 @@
-package com.example.travelhelper.ui.views
+package com.example.travelhelper.ui.bottom_sheet_view
 
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
-import android.net.Uri
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
-import androidx.fragment.app.viewModels
 import com.example.travelhelper.R
 import com.example.travelhelper.data.network.OSMPlace
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -23,10 +23,13 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
 import kotlin.getValue
 import androidx.core.net.toUri
+import androidx.lifecycle.ViewModelProvider
+import com.example.travelhelper.utils.SharedViewModel
 
 class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment() {
 
     private val viewModel by viewModel<BottomSheetViewModel>(named("bottomSheetViewModel"))
+    private lateinit var sharedViewModel: SharedViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,6 +37,11 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_place_info_bottom_sheet, container, false)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        sharedViewModel = ViewModelProvider(requireParentFragment())[SharedViewModel::class.java]
     }
 
     @SuppressLint("SetTextI18n")
@@ -47,6 +55,7 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
         val nameTextView = view.findViewById<TextView>(R.id.name_txt)
         val descriptionTextView = view.findViewById<TextView>(R.id.description_txt)
         val wikiTextView = view.findViewById<TextView>(R.id.wiki_txt)
+        val createRouteBtn = view.findViewById<Button>(R.id.create_route_btn)
 
         workingTimeTextView.text = if (!userData.openingHours.isNullOrEmpty()) {
             "${getString(R.string.opening_hours)}: ${userData.openingHours}"
@@ -73,7 +82,7 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
         } else if(!userData.wikidata.isNullOrEmpty()) {
             "https://www.wikidata.org/wiki/${userData.wikidata}"
         } else ""
-        //wikiTextView.text = "${getString(R.string.get_more_info)}: $siteText"
+
         if (siteText.isEmpty()) {
             wikiTextView.visibility = View.GONE
         } else {
@@ -87,6 +96,11 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
 
         likeBtn.setOnClickListener {
             viewModel.addLikedAttractionToDb(userData)
+        }
+
+        createRouteBtn.setOnClickListener {
+            sharedViewModel.setDialogResult(arrayOf(userData.longitude, userData.latitude))
+            dismiss()
         }
     }
 

@@ -1,11 +1,14 @@
 package com.example.travelhelper.ui.map
 
 import android.Manifest
+import android.R.attr.action
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import androidx.fragment.app.viewModels
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.Menu
@@ -15,13 +18,16 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.travelhelper.MainActivity
 import com.example.travelhelper.R
 import com.example.travelhelper.data.network.OSMPlace
 import com.example.travelhelper.databinding.FragmentMainMapBinding
-import com.example.travelhelper.ui.views.AttractionBottomSheet
+import com.example.travelhelper.ui.bottom_sheet_view.AttractionBottomSheet
+import com.example.travelhelper.utils.LocationService
+import com.example.travelhelper.utils.SharedViewModel
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -34,10 +40,12 @@ import com.yandex.mapkit.map.PlacemarkMapObject
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
+import kotlin.getValue
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val locationPermissionRequestCode = 1000
     private val mainMapviewModel by viewModel<MainMapViewModel>(named("mainMapViewModel"))
+    private lateinit var sharedViewModel: SharedViewModel
 
     private val placemarks = mutableListOf<PlacemarkMapObject>()
 
@@ -60,12 +68,17 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentMainMapBinding.bind(view)
+        sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
 
         checkLocationPermissions()
         setupObservers(view)
 
+        sharedViewModel.dialogResult.observe(viewLifecycleOwner) {
+
+        }
+
         binding.reloadImg.setOnClickListener {
-            mainMapviewModel.loadAttractions("Гомель")
+            mainMapviewModel.loadAttractions(CITY)
             binding.loadingView.visibility = View.VISIBLE
             binding.reloadAttractions.visibility = View.GONE
         }
@@ -105,14 +118,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private fun checkLocationPermissions() {
         if (hasLocationPermissions()) {
             setupMap()
-        } else {
-            requestPermissions(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ),
-                locationPermissionRequestCode
-            )
         }
     }
 

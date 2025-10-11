@@ -112,5 +112,7 @@ dependencies {
     implementation("io.insert-koin:koin-core:${koinVersion}")
     implementation("io.insert-koin:koin-android:${koinVersion}")
     testImplementation("io.insert-koin:koin-test:${koinVersion}")
+
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 }
 

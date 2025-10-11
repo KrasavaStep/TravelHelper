@@ -1,8 +1,7 @@
-package com.example.travelhelper.ui.views
+package com.example.travelhelper.ui.bottom_sheet_view
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.travelhelper.data.db.AtractionDao
 import com.example.travelhelper.data.db.AttractionsRepository
 import com.example.travelhelper.data.network.OSMPlace
 import kotlinx.coroutines.Dispatchers
