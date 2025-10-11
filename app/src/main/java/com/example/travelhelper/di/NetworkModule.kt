@@ -1,7 +1,7 @@
 package com.example.travelhelper.di
 
-import com.example.travelhelper.BuildConfig
-import com.example.travelhelper.data.network.OverpassAPI
+import com.example.travelhelper.data.network.overpass_api.OverpassAPI
+import com.example.travelhelper.data.network.routes_api.RoutesAPI
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.core.qualifier.named
@@ -19,11 +19,11 @@ val networkModule = module {
         Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
             .baseUrl(OverpassAPI.OVERPASS_API_URL)
-            .client(get())
+            .client(get(named("AttractionApi")))
             .build()
     }
 
-    single<OkHttpClient> {
+    single<OkHttpClient>(named("AttractionApi")) {
 
         OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS).addInterceptor(get<HttpLoggingInterceptor>().apply {
@@ -35,5 +35,23 @@ val networkModule = module {
         (get<Retrofit>(named("AttractionApi"))).create(OverpassAPI::class.java)
     }
 
+    single<OkHttpClient>(named("RoutesApi")) {
+
+        OkHttpClient.Builder().addInterceptor(get<HttpLoggingInterceptor>().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }).build()
+    }
+
+    single<Retrofit>(named("RoutesApi")) {
+        Retrofit.Builder()
+            .addConverterFactory(GsonConverterFactory.create())
+            .baseUrl(RoutesAPI.ROUTES_API_URI)
+            .client(get(named("RoutesApi")))
+            .build()
+    }
+
+    single<RoutesAPI> {
+        (get<Retrofit>(named("RoutesApi"))).create(RoutesAPI::class.java)
+    }
 
 }

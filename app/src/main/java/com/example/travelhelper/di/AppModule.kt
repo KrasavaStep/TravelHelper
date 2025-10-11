@@ -11,7 +11,7 @@ val appModule = module {
 
     // ViewModel for Detail View
     viewModel(named("bottomSheetViewModel")) { BottomSheetViewModel(get()) }
-    viewModel(named("mainMapViewModel")) { MainMapViewModel(get()) }
+    viewModel(named("mainMapViewModel")) { MainMapViewModel(get(), get()) }
     viewModel(named("sharedViewModel")) { SharedViewModel() }
 
 }

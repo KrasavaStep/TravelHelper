@@ -1,12 +1,11 @@
 package com.example.travelhelper.ui.map
 
 import android.Manifest
-import android.R.attr.action
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -14,6 +13,7 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
@@ -23,14 +23,21 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.travelhelper.MainActivity
 import com.example.travelhelper.R
-import com.example.travelhelper.data.network.OSMPlace
+import com.example.travelhelper.data.network.overpass_api.OSMPlace
+import com.example.travelhelper.data.network.routes_api.LatLng
+import com.example.travelhelper.data.network.routes_api.Route
 import com.example.travelhelper.databinding.FragmentMainMapBinding
 import com.example.travelhelper.ui.bottom_sheet_view.AttractionBottomSheet
-import com.example.travelhelper.utils.LocationService
+import com.example.travelhelper.utils.LocationLiveData
 import com.example.travelhelper.utils.SharedViewModel
+import com.example.travelhelper.utils.Utils.getFromPrefs
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.material.snackbar.Snackbar
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
+import com.yandex.mapkit.geometry.Polyline
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.InputListener
 import com.yandex.runtime.image.ImageProvider.fromBitmap
@@ -46,6 +53,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val locationPermissionRequestCode = 1000
     private val mainMapviewModel by viewModel<MainMapViewModel>(named("mainMapViewModel"))
     private lateinit var sharedViewModel: SharedViewModel
+    private lateinit var thisView: View
 
     private val placemarks = mutableListOf<PlacemarkMapObject>()
 
@@ -68,13 +76,15 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentMainMapBinding.bind(view)
+        thisView = view
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
 
         checkLocationPermissions()
         setupObservers(view)
 
-        sharedViewModel.dialogResult.observe(viewLifecycleOwner) {
-
+        sharedViewModel.dialogResult.observe(viewLifecycleOwner) { it ->
+            val destination = LatLng(it[0], it[1])
+            calculateRoute(destination)
         }
 
         binding.reloadImg.setOnClickListener {
@@ -141,6 +151,33 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         if (requestCode == locationPermissionRequestCode) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 setupMap()
+            }
+        }
+    }
+
+    private fun calculateRoute(destination: LatLng){
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainMapviewModel.calculateRoute(
+                    origin = LatLng(
+                        requireContext().getFromPrefs("lon", 0.0f).toDouble(),
+                        requireContext().getFromPrefs("lat", 0.0f).toDouble()
+                    ),
+                    destination = destination
+                )
+                mainMapviewModel.routeState.collect { state ->
+                    when (state) {
+                        is MainMapViewModel.RouteUiState.Success -> {
+                            displayRoute(state.route)
+                            showRouteInfo(state.route)
+                        }
+                        is MainMapViewModel.RouteUiState.Error -> {
+                            Snackbar.make(thisView, state.exception.message.toString(), Snackbar.LENGTH_LONG).show()
+                            Log.d("rout exc",state.exception.message.toString() )
+                        }
+                        is MainMapViewModel.RouteUiState.Loading -> {}
+                    }
+                }
             }
         }
     }
@@ -254,6 +291,30 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return bitmap
+    }
+
+    private fun displayRoute(route: Route) {
+        val decodedPath = mainMapviewModel.decodePolyline(route)
+
+        val polyline = Polyline(decodedPath)
+
+        val polylineObject = binding.mapView.mapWindow.map.mapObjects.addPolyline(polyline)
+
+        polylineObject.apply {
+            strokeWidth = 5f
+            setStrokeColor(ContextCompat.getColor(requireContext(), R.color.blue))
+            outlineWidth = 1f
+            outlineColor = ContextCompat.getColor(requireContext(), R.color.black)
+        }
+
+        // Масштабируем карту чтобы показать весь маршрут
+    }
+
+    private fun showRouteInfo(route: Route) {
+        val routeInfo = mainMapviewModel.getRouteInfo(route)
+        val info = "Расстояние: ${routeInfo[0]}\nВремя: ${routeInfo[0]}"
+
+        Toast.makeText(requireContext(), info, Toast.LENGTH_LONG).show()
     }
 
     companion object {

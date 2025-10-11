@@ -1,4 +1,4 @@
-package com.example.travelhelper.data.network
+package com.example.travelhelper.data.network.overpass_api
 
 import retrofit2.Response
 import retrofit2.http.Field

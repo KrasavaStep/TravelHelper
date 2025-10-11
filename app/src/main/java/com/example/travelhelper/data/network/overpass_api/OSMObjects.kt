@@ -1,4 +1,4 @@
-package com.example.travelhelper.data.network
+package com.example.travelhelper.data.network.overpass_api
 
 import com.google.gson.annotations.SerializedName
 

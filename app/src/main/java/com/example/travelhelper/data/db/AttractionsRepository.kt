@@ -1,6 +1,6 @@
 package com.example.travelhelper.data.db
 
-import com.example.travelhelper.data.network.OSMPlace
+import com.example.travelhelper.data.network.overpass_api.OSMPlace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

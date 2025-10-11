@@ -1,10 +1,4 @@
-package com.example.travelhelper.data.network
-
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import java.util.concurrent.TimeUnit
+package com.example.travelhelper.data.network.overpass_api
 
 class OSMRepository(private val overpassService: OverpassAPI) {
 

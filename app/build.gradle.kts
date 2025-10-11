@@ -35,6 +35,12 @@ android {
         }
         buildConfigField("String", "MAPKIT_KEY", "\"$apiKey\"")
 
+        val apiKeyRoutes = properties.getProperty("ROUTES_API_KEY") ?: ""
+        if (apiKeyRoutes.isEmpty()) {
+            error("API_KEY not set in local.properties")
+        }
+        buildConfigField("String", "ROUTES_API_KEY", "\"$apiKeyRoutes\"")
+
     }
 
     kapt {
@@ -114,5 +120,7 @@ dependencies {
     testImplementation("io.insert-koin:koin-test:${koinVersion}")
 
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.google.maps.android:android-maps-utils:3.19.0")
+    implementation("com.google.android.gms:play-services-maps:19.2.0")
 }
 

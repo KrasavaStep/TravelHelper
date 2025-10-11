@@ -1,6 +1,7 @@
 package com.example.travelhelper.utils
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
@@ -45,6 +46,7 @@ class LocationService : Service() {
         return START_STICKY
     }
 
+    @SuppressLint("ForegroundServiceType")
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     private fun startLocationTracking() {
         // Создаем уведомление для foreground service
@@ -65,9 +67,13 @@ class LocationService : Service() {
 //                    broadcastIntent.putExtra("latitude", location.latitude)
 //                    broadcastIntent.putExtra("longitude", location.longitude)
 //                    sendBroadcast(broadcastIntent)
+                    val latitude = location.latitude
+                    val longitude = location.longitude
+                    applicationContext.saveToPrefs("lat", latitude.toFloat())
+                    applicationContext.saveToPrefs("lon", longitude.toFloat())
 
                     // Или обновляем через LiveData/Flow
-                    LocationLiveData.updateLocation(location)
+                    //LocationLiveData.updateLocation(location)
                 }
             }
         }

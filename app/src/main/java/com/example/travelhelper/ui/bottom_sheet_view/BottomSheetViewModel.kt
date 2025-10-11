@@ -3,7 +3,7 @@ package com.example.travelhelper.ui.bottom_sheet_view
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.travelhelper.data.db.AttractionsRepository
-import com.example.travelhelper.data.network.OSMPlace
+import com.example.travelhelper.data.network.overpass_api.OSMPlace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
