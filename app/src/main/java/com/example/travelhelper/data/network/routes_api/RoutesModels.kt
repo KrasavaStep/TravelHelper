@@ -1,35 +1,36 @@
 package com.example.travelhelper.data.network.routes_api
 
+import com.google.gson.annotations.SerializedName
 data class RoutesApiResponse(
-    val routes: List<Route>
+    @SerializedName("routes") val routes: List<Route>
 )
 
 data class Route(
-    val distanceMeters: Int,
-    val duration: String,
-    val polyline: Polyline,
-    val legs: List<Leg>
+    @SerializedName("distanceMeters") val distanceMeters: Int,
+    @SerializedName("duration") val duration: String,
+    @SerializedName("polyline") val polyline: Polyline,
+    @SerializedName("legs") val legs: List<Leg>
 )
 
 data class Polyline(
-    val encodedPolyline: String
+    @SerializedName("encodedPolyline") val encodedPolyline: String
 )
 
 data class Leg(
-    val distanceMeters: Int,
-    val duration: String,
-    val polyline: Polyline,
-    val startLocation: Location,
-    val endLocation: Location
+    @SerializedName("distanceMeters") val distanceMeters: Int,
+    @SerializedName("duration") val duration: String,
+    @SerializedName("polyline") val polyline: Polyline,
+    @SerializedName("startLocation") val startLocation: Location,
+    @SerializedName("endLocation") val endLocation: Location
 )
 
 data class Location(
-    val latLng: LatLng
+    @SerializedName("latLng") val latLng: LatLng
 )
 
 data class LatLng(
-    val latitude: Double,
-    val longitude: Double
+    @SerializedName("latitude") val latitude: Double,
+    @SerializedName("longitude") val longitude: Double
 )
 
 data class RoutesRequest(

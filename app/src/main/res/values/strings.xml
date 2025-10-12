@@ -28,4 +28,7 @@
 
     <string name="get_empty_dataset">Не найдено достопримечательностей в городе. Проверте правильность его написания</string>
 
+    <string name="route_time">Время в пути</string>
+    <string name="route_length">Расстояние</string>
+
 </resources>

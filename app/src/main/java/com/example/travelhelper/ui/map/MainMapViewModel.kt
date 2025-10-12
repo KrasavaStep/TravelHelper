@@ -10,6 +10,7 @@ import com.example.travelhelper.data.network.routes_api.RoutesManager
 import com.yandex.mapkit.geometry.Point
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class MainMapViewModel(
@@ -18,10 +19,10 @@ class MainMapViewModel(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AttractionsUiState>(AttractionsUiState.Loading(true))
-    val uiState: StateFlow<AttractionsUiState> = _uiState
+    val uiState: StateFlow<AttractionsUiState> = _uiState.asStateFlow()
 
     private val _routeState = MutableStateFlow<RouteUiState>(RouteUiState.Loading(true))
-    val routeState: StateFlow<RouteUiState> = _routeState
+    val routeState: StateFlow<RouteUiState> = _routeState.asStateFlow()
 
     fun loadAttractions(cityName: String) {
         viewModelScope.launch {
@@ -36,28 +37,28 @@ class MainMapViewModel(
             } catch (e: Exception) {
                 val ex = Exception("Ошибка загрузки: ${e.message}")
                 _uiState.value = AttractionsUiState.Error(ex)
-                _uiState.value = AttractionsUiState.Loading(false)
             } finally {
                 _uiState.value = AttractionsUiState.Loading(false)
             }
         }
     }
 
-    fun calculateRoute(origin: LatLng, destination: LatLng) {
+    fun calculateRouteResponse(origin: LatLng, destination: LatLng) {
         viewModelScope.launch {
-            val route = routesManager.calculateRoute(origin, destination)
-
-            if (route.isSuccess) {
-                val route = route.getOrNull()
+            try {
+                val route = routesManager.calculateRoute(origin = origin, destination = destination)
                 if (route != null) {
                     _routeState.value = RouteUiState.Success(route)
                 } else {
-                    val ex = Exception("Нет данных о мрашруте")
-                    _routeState.value = RouteUiState.Error(ex)
+                    _routeState.value = RouteUiState.Error(Exception("Маршрут не найден"))
                 }
-            } else {
-                route.onFailure { it -> _routeState.value = RouteUiState.Error(it) }
+
+            } catch (e: Exception) {
+                _routeState.value = RouteUiState.Error(e)
+            } finally {
+                _routeState.value = RouteUiState.Loading(false)
             }
+
         }
     }
 
@@ -68,7 +69,8 @@ class MainMapViewModel(
     }
 
     fun getRouteInfo(route: Route): List<String> {
-        val duration = routesManager.formatDuration(route.duration.toInt())
+        val routeDuration = route.duration.substring(0, route.duration.length - 1)
+        val duration = routesManager.formatDuration(routeDuration.toInt())
         val distance = routesManager.formatDistance(route.distanceMeters)
         return listOf(duration, distance)
     }

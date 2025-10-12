@@ -1,6 +1,7 @@
 package com.example.travelhelper.data.network.routes_api
 
 import android.content.Context
+import android.util.Log
 import com.example.travelhelper.BuildConfig
 import com.google.maps.android.PolyUtil
 
@@ -12,21 +13,26 @@ class RoutesManager(
     suspend fun calculateRoute(
         origin: LatLng,
         destination: LatLng
-    ): Result<Route> = try {
+    ): Route? {
+
         val request = RoutesRequest(
             origin = Waypoint(Location(origin)),
             destination = Waypoint(Location(destination))
         )
 
-        val response = routesApiService.computeRoutes(apiKey = BuildConfig.ROUTES_API_KEY, request = request)
+        return try {
+            val response = routesApiService.computeRoutes(apiKey = BuildConfig.ROUTES_API_KEY, request = request)
+            Log.d("geopos 3", "fff ${response.toString()}")
+            if (response.isSuccessful) {
+                response.body()?.routes?.first()
+            } else {
+                null
+            }
 
-        if (response.routes.isNotEmpty()) {
-            Result.success(response.routes.first())
-        } else {
-            Result.failure(Exception("No routes found"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-    } catch (e: Exception) {
-        Result.failure(Exception(e.message.toString()))
     }
 
     fun decodePolyline(encodedPolyline: String): List<LatLng> {

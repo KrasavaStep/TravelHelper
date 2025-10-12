@@ -1,26 +1,25 @@
 package com.example.travelhelper.ui.map
 
 import android.Manifest
-import android.content.Context
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.travelhelper.BuildConfig
 import com.example.travelhelper.MainActivity
 import com.example.travelhelper.R
 import com.example.travelhelper.data.network.overpass_api.OSMPlace
@@ -28,11 +27,8 @@ import com.example.travelhelper.data.network.routes_api.LatLng
 import com.example.travelhelper.data.network.routes_api.Route
 import com.example.travelhelper.databinding.FragmentMainMapBinding
 import com.example.travelhelper.ui.bottom_sheet_view.AttractionBottomSheet
-import com.example.travelhelper.utils.LocationLiveData
 import com.example.travelhelper.utils.SharedViewModel
 import com.example.travelhelper.utils.Utils.getFromPrefs
-import com.google.android.gms.maps.model.LatLngBounds
-import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.material.snackbar.Snackbar
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
@@ -40,21 +36,21 @@ import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polyline
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.InputListener
-import com.yandex.runtime.image.ImageProvider.fromBitmap
 import com.yandex.mapkit.map.Map
 import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
+import com.yandex.mapkit.map.PolylineMapObject
+import com.yandex.runtime.image.ImageProvider.fromBitmap
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
-import kotlin.getValue
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val locationPermissionRequestCode = 1000
     private val mainMapviewModel by viewModel<MainMapViewModel>(named("mainMapViewModel"))
     private lateinit var sharedViewModel: SharedViewModel
     private lateinit var thisView: View
-
+    private var currentRoute: PolylineMapObject? = null
     private val placemarks = mutableListOf<PlacemarkMapObject>()
 
     private var _binding: FragmentMainMapBinding? = null
@@ -81,9 +77,12 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
         checkLocationPermissions()
         setupObservers(view)
+        setupRouteObservers()
 
         sharedViewModel.dialogResult.observe(viewLifecycleOwner) { it ->
-            val destination = LatLng(it[0], it[1])
+            binding.routeInfoView.visibility = View.GONE
+            removeRoute()
+            val destination = LatLng(it[1], it[0])
             calculateRoute(destination)
         }
 
@@ -91,6 +90,11 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
             mainMapviewModel.loadAttractions(CITY)
             binding.loadingView.visibility = View.VISIBLE
             binding.reloadAttractions.visibility = View.GONE
+        }
+
+        binding.closeRouteInfo.setOnClickListener {
+            binding.routeInfoView.visibility = View.GONE
+            removeRoute()
         }
     }
 
@@ -155,31 +159,65 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
     }
 
-    private fun calculateRoute(destination: LatLng){
-        lifecycleScope.launch {
+    fun removeRoute() {
+        if (currentRoute?.isValid == true) {
+            binding.mapView.mapWindow.map.mapObjects.remove(currentRoute!!)
+        }
+        currentRoute = null
+    }
+
+    private fun setupRouteObservers() {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mainMapviewModel.calculateRoute(
-                    origin = LatLng(
-                        requireContext().getFromPrefs("lon", 0.0f).toDouble(),
-                        requireContext().getFromPrefs("lat", 0.0f).toDouble()
-                    ),
-                    destination = destination
-                )
                 mainMapviewModel.routeState.collect { state ->
+
                     when (state) {
                         is MainMapViewModel.RouteUiState.Success -> {
+                            Log.d("geopos 2", "fff ${state.route}")
                             displayRoute(state.route)
                             showRouteInfo(state.route)
+                            binding.loadingView.visibility = View.GONE
                         }
+
                         is MainMapViewModel.RouteUiState.Error -> {
-                            Snackbar.make(thisView, state.exception.message.toString(), Snackbar.LENGTH_LONG).show()
-                            Log.d("rout exc",state.exception.message.toString() )
+                            Snackbar.make(
+                                thisView,
+                                state.exception.message.toString(),
+                                Snackbar.LENGTH_LONG
+                            ).show()
+                            Log.d("rout exc", state.exception.message.toString())
+                            binding.loadingView.visibility = View.GONE
                         }
-                        is MainMapViewModel.RouteUiState.Loading -> {}
+
+                        is MainMapViewModel.RouteUiState.Loading -> {
+                            if (state.isLoading) {
+                                binding.loadingView.visibility = View.VISIBLE
+                            } else {
+                                binding.loadingView.visibility = View.GONE
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+
+    private fun calculateRoute(destination: LatLng) {
+        val origin = if (BuildConfig.DEBUG) {
+            CITY_GEOPOSITION
+        } else {
+            LatLng(
+                requireContext().getFromPrefs("lat", 0.0f).toDouble(),
+                requireContext().getFromPrefs("lon", 0.0f).toDouble()
+            )
+        }
+
+        mainMapviewModel.calculateRouteResponse(
+            origin = origin,
+            destination = destination
+        )
+
+
     }
 
     private fun setupObservers(view: View) {
@@ -238,15 +276,12 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     private val mapInputListener = object : InputListener {
-        override fun onMapTap(p0: Map, p1: Point) {
-
-        }
+        override fun onMapTap(p0: Map, p1: Point) {}
 
         override fun onMapLongTap(
             p0: Map,
             p1: Point
         ) {
-
         }
 
     }
@@ -298,9 +333,9 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
         val polyline = Polyline(decodedPath)
 
-        val polylineObject = binding.mapView.mapWindow.map.mapObjects.addPolyline(polyline)
+        currentRoute = binding.mapView.mapWindow.map.mapObjects.addPolyline(polyline)
 
-        polylineObject.apply {
+        currentRoute?.apply {
             strokeWidth = 5f
             setStrokeColor(ContextCompat.getColor(requireContext(), R.color.blue))
             outlineWidth = 1f
@@ -310,15 +345,19 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         // Масштабируем карту чтобы показать весь маршрут
     }
 
+    @SuppressLint("SetTextI18n")
     private fun showRouteInfo(route: Route) {
         val routeInfo = mainMapviewModel.getRouteInfo(route)
-        val info = "Расстояние: ${routeInfo[0]}\nВремя: ${routeInfo[0]}"
 
-        Toast.makeText(requireContext(), info, Toast.LENGTH_LONG).show()
+        binding.routeInfoView.visibility = View.VISIBLE
+        binding.routeLengthText.text = "${getString(R.string.route_length)}: ${routeInfo[1]}"
+
+        binding.routeTimeText.text = "${getString(R.string.route_time)}: ${routeInfo[0]}"
     }
 
     companion object {
         fun mainMapFragmentInstance() = MainMapFragment()
         private const val CITY = "Гомель"
+        private val CITY_GEOPOSITION = LatLng(52.4171724, 30.9963954)
     }
 }
