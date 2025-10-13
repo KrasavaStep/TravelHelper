@@ -2,6 +2,9 @@ package com.example.travelhelper.ui.map
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.travelhelper.data.data_model.AttractionModel
+import com.example.travelhelper.data.data_model.RouteModel
+import com.example.travelhelper.data.db.AttractionsRepository
 import com.example.travelhelper.data.network.overpass_api.OSMPlace
 import com.example.travelhelper.data.network.overpass_api.OSMRepository
 import com.example.travelhelper.data.network.routes_api.LatLng
@@ -15,11 +18,15 @@ import kotlinx.coroutines.launch
 
 class MainMapViewModel(
     private val repository: OSMRepository,
-    private val routesManager: RoutesManager
+    private val routesManager: RoutesManager,
+    private val attractionRepository: AttractionsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AttractionsUiState>(AttractionsUiState.Loading(true))
     val uiState: StateFlow<AttractionsUiState> = _uiState.asStateFlow()
+
+    private val _customPointState = MutableStateFlow<CustomPointUiState>(CustomPointUiState.Error("пусто"))
+    val customPointState: StateFlow<CustomPointUiState> = _customPointState.asStateFlow()
 
     private val _routeState = MutableStateFlow<RouteUiState>(RouteUiState.Loading(true))
     val routeState: StateFlow<RouteUiState> = _routeState.asStateFlow()
@@ -62,8 +69,18 @@ class MainMapViewModel(
         }
     }
 
-    fun decodePolyline(route: Route): List<Point> {
+    fun getCustomPoints(routeId: Int) {
+        viewModelScope.launch {
+            _customPointState.value = CustomPointUiState.Success(attractionRepository.getCustomPoints(routeId))
+        }
+    }
 
+    fun decodePolyline(route: RouteModel): List<Point> {
+        return routesManager.decodePolyline(route.encodedPolyline)
+            .map { Point(it.latitude, it.longitude) }
+    }
+
+    fun decodePolyline(route: Route): List<Point> {
         return routesManager.decodePolyline(route.polyline.encodedPolyline)
             .map { Point(it.latitude, it.longitude) }
     }
@@ -86,5 +103,10 @@ class MainMapViewModel(
         data class Success(val attractions: List<OSMPlace>) : AttractionsUiState()
         data class Error(val exception: Throwable) : AttractionsUiState()
         data class Loading(val isLoading: Boolean) : AttractionsUiState()
+    }
+
+    sealed class CustomPointUiState {
+        data class Success(val attractions: List<AttractionModel>) : CustomPointUiState()
+        data class Error(val exception: String) : CustomPointUiState()
     }
 }

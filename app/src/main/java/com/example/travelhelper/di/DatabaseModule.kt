@@ -3,6 +3,8 @@ package com.example.travelhelper.di
 import android.app.Application
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.travelhelper.data.db.AtractionDB
 import com.example.travelhelper.data.db.AtractionDao
 import org.koin.dsl.module
@@ -15,12 +17,25 @@ val databaseModule = module {
 }
 
 fun provideDatabase(application: Application): AtractionDB {
-    return Room.databaseBuilder(application, AtractionDB::class.java, "attraction_db")
-        .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
-        .build()
-}
+
+    return Room.databaseBuilder(
+            application,
+            AtractionDB::class.java,
+            "attraction_db"
+        ).createFromAsset("databases/attraction_db_asset.db")
+            .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
+            .addMigrations(MIGRATION_1_2)
+            .build()
+    }
 
 
 fun provideDao(db: AtractionDB): AtractionDao {
     return db.getAttrationDao()
+}
+
+private val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // Оставьте пустым, если изменения только в Entity классах
+        // или добавьте SQL команды для изменения схемы
+    }
 }

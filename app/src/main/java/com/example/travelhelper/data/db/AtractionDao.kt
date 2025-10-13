@@ -13,4 +13,13 @@ interface AtractionDao {
 
     @Query("SELECT * FROM ATRACTIONS_TABLE")
     suspend fun getAllAttractions(): List<AttractionEntity>
+
+    @Query("SELECT * FROM ATRACTIONS_TABLE WHERE isLiked=1")
+    suspend fun getLikedAttractions(): List<AttractionEntity>?
+
+    @Query("SELECT * FROM ROUTES_TABLE")
+    suspend fun getRoutes(): List<RoutesEntity>
+
+    @Query("SELECT * FROM ATRACTIONS_TABLE WHERE routeId=:sentRouteId")
+    suspend fun getCustomPoints(sentRouteId: Int): List<AttractionEntity>
 }

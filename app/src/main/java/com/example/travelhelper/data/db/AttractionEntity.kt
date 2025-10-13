@@ -19,7 +19,8 @@ import androidx.room.PrimaryKey
 )
 data class AttractionEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val cityId: Int = 0,
+    val routeId: Int? = null,
+    val cityName: String = "Гомель",
     val name: String,
     val category: String,
     val latitude: Double,

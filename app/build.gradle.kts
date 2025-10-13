@@ -6,6 +6,8 @@ plugins {
     `maven-publish`
     kotlin("kapt")
     kotlin("plugin.serialization") version "2.0.21"
+    id("androidx.navigation.safeargs.kotlin")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -122,5 +124,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.google.maps.android:android-maps-utils:3.19.0")
     implementation("com.google.android.gms:play-services-maps:19.2.0")
+
+    //classpath("androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version")
 }
 

@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import com.example.travelhelper.R
 import com.example.travelhelper.data.network.overpass_api.OSMPlace
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -24,6 +25,7 @@ import kotlin.getValue
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModelProvider
 import com.example.travelhelper.utils.SharedViewModel
+import com.google.android.material.snackbar.Snackbar
 
 class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment() {
 
@@ -95,6 +97,7 @@ class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment(
 
         likeBtn.setOnClickListener {
             viewModel.addLikedAttractionToDb(userData)
+            Toast.makeText(context, "Место добавлено в понравившиеся", Toast.LENGTH_LONG).show()
         }
 
         createRouteBtn.setOnClickListener {

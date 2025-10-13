@@ -9,8 +9,20 @@
         android:id="@+id/nav_main_map"
         android:name="com.example.travelhelper.ui.map.MainMapFragment"
         android:label="@string/menu_main_map"
-        tools:layout="@layout/fragment_main_map"
-        />
+        tools:layout="@layout/fragment_main_map">
+
+
+        <argument
+            android:name="id"
+            app:argType="integer"
+            android:defaultValue="1"
+            />
+        <argument
+            android:name="route"
+            app:argType="com.example.travelhelper.data.data_model.RouteModel"
+            android:defaultValue="@null"
+            app:nullable="true" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_about_app"
@@ -22,7 +34,11 @@
         android:id="@+id/nav_liked_places"
         android:name="com.example.travelhelper.ui.liked_places.LikedPlacesFragment"
         android:label="@string/menu_liked"
-        tools:layout="@layout/fragment_liked_places" />
+        tools:layout="@layout/fragment_liked_places">
+        <action
+            android:id="@+id/action_nav_liked_places_to_nav_main_map"
+            app:destination="@id/nav_main_map" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_settings"

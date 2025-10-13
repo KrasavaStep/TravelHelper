@@ -19,9 +19,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.navArgs
 import com.example.travelhelper.BuildConfig
 import com.example.travelhelper.MainActivity
 import com.example.travelhelper.R
+import com.example.travelhelper.data.data_model.AttractionModel
+import com.example.travelhelper.data.data_model.RouteModel
 import com.example.travelhelper.data.network.overpass_api.OSMPlace
 import com.example.travelhelper.data.network.routes_api.LatLng
 import com.example.travelhelper.data.network.routes_api.Route
@@ -52,6 +55,9 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private lateinit var thisView: View
     private var currentRoute: PolylineMapObject? = null
     private val placemarks = mutableListOf<PlacemarkMapObject>()
+    private val customPlaceMarks = mutableListOf<PlacemarkMapObject>()
+
+    private val args: MainMapFragmentArgs by navArgs()
 
     private var _binding: FragmentMainMapBinding? = null
     private val binding
@@ -76,8 +82,15 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
 
         checkLocationPermissions()
-        setupObservers(view)
-        setupRouteObservers()
+
+        if (args.route != null) {
+            mainMapviewModel.getCustomPoints(args.id)
+            setupCustomPointObserver()
+        }
+        else {
+            setupObservers(view)
+            setupRouteObservers()
+        }
 
         sharedViewModel.dialogResult.observe(viewLifecycleOwner) { it ->
             binding.routeInfoView.visibility = View.GONE
@@ -166,6 +179,24 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         currentRoute = null
     }
 
+    private fun setupCustomPointObserver() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainMapviewModel.customPointState.collect { state ->
+                    when(state) {
+                        is MainMapViewModel.CustomPointUiState.Error -> {}
+                        is MainMapViewModel.CustomPointUiState.Success -> {
+                            binding.mapView.mapWindow.map.mapObjects.clear()
+                            addCustomPlacemark(state.attractions)
+                            displayCustomRoute(args.route!!)
+                            showCustomRouteInfo(args.route!!)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun setupRouteObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -173,7 +204,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
                     when (state) {
                         is MainMapViewModel.RouteUiState.Success -> {
-                            Log.d("geopos 2", "fff ${state.route}")
                             displayRoute(state.route)
                             showRouteInfo(state.route)
                             binding.loadingView.visibility = View.GONE
@@ -297,6 +327,23 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         true
     }
 
+    private fun addCustomPlacemark(points: List<AttractionModel>) {
+        val marker = createBitmapFromVector(R.drawable.map_marker_svg)
+
+        val imageProvider = fromBitmap(marker)
+        points.forEachIndexed { index, point ->
+            val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
+                geometry = Point(point.latitude, point.longitude)
+                setIcon(imageProvider)
+                opacity = 0.6f
+                setText(point.name)
+                userData = point
+            }
+            placemark.addTapListener(onAttractionTapListener)
+            customPlaceMarks.add(placemark)
+        }
+    }
+
     private fun addPlacemark(points: List<OSMPlace>) {
         val marker = createBitmapFromVector(R.drawable.map_marker_svg)
 
@@ -328,6 +375,22 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         return bitmap
     }
 
+    private fun displayCustomRoute(route: RouteModel) {
+        val decodedPath = mainMapviewModel.decodePolyline(route)
+
+        val polyline = Polyline(decodedPath)
+
+        currentRoute = binding.mapView.mapWindow.map.mapObjects.addPolyline(polyline)
+
+        currentRoute?.apply {
+            strokeWidth = 5f
+            setStrokeColor(ContextCompat.getColor(requireContext(), R.color.blue))
+            outlineWidth = 1f
+            outlineColor = ContextCompat.getColor(requireContext(), R.color.black)
+        }
+
+        // Масштабируем карту чтобы показать весь маршрут TODO
+    }
     private fun displayRoute(route: Route) {
         val decodedPath = mainMapviewModel.decodePolyline(route)
 
@@ -342,7 +405,15 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
             outlineColor = ContextCompat.getColor(requireContext(), R.color.black)
         }
 
-        // Масштабируем карту чтобы показать весь маршрут
+        // Масштабируем карту чтобы показать весь маршрут TODO
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun showCustomRouteInfo(route: RouteModel) {
+
+        binding.routeInfoView.visibility = View.VISIBLE
+        binding.routeLengthText.text = "${getString(R.string.route_length)}: ${route.distanceMeters}"
+        binding.routeTimeText.text = "${getString(R.string.route_time)}: ${route.duration}"
     }
 
     @SuppressLint("SetTextI18n")
