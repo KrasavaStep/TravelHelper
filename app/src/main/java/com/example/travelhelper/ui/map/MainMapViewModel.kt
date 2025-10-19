@@ -10,6 +10,7 @@ import com.example.travelhelper.data.network.overpass_api.OSMRepository
 import com.example.travelhelper.data.network.routes_api.LatLng
 import com.example.travelhelper.data.network.routes_api.Route
 import com.example.travelhelper.data.network.routes_api.RoutesManager
+import com.example.travelhelper.data.network.routes_api.RoutesRequestWithIntermediates
 import com.yandex.mapkit.geometry.Point
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,10 +51,15 @@ class MainMapViewModel(
         }
     }
 
-    fun calculateRouteResponse(origin: LatLng, destination: LatLng) {
+    fun calculateRouteResponse(origin: LatLng, destination: LatLng, intermediates: List<LatLng>? = null) {
         viewModelScope.launch {
             try {
-                val route = routesManager.calculateRoute(origin = origin, destination = destination)
+                val route = if (intermediates.isNullOrEmpty()) {
+                    routesManager.calculateRoute(origin = origin, destination = destination)
+                } else {
+                    routesManager.calculateCustomRoute(origin = origin, destination = destination, intermediates = intermediates!!)
+                }
+
                 if (route != null) {
                     _routeState.value = RouteUiState.Success(route)
                 } else {
@@ -73,11 +79,6 @@ class MainMapViewModel(
         viewModelScope.launch {
             _customPointState.value = CustomPointUiState.Success(attractionRepository.getCustomPoints(routeId))
         }
-    }
-
-    fun decodePolyline(route: RouteModel): List<Point> {
-        return routesManager.decodePolyline(route.encodedPolyline)
-            .map { Point(it.latitude, it.longitude) }
     }
 
     fun decodePolyline(route: Route): List<Point> {

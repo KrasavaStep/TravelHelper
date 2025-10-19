@@ -17,6 +17,14 @@ interface RoutesAPI {
         @Body request: RoutesRequest
     ): Response<RoutesApiResponse>
 
+    @POST("directions/v2:computeRoutes")
+    suspend fun computeRoutesWithIntermediates(
+        @Header("X-Goog-Api-Key") apiKey: String,
+        @Header("X-Goog-FieldMask") fields: String = "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs",
+        @Header("Content-Type") contentType: String = "application/json",
+        @Body request: RoutesRequestWithIntermediates
+    ): Response<RoutesApiResponse>
+
     companion object {
         const val ROUTES_API_URI = "https://routes.googleapis.com/"
     }

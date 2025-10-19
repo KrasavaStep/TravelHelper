@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         MapKitFactory.setApiKey(BuildConfig.MAPKIT_KEY)
         requestLocationPermissions()
-        startLocationService()
+        //startLocationService()
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -70,7 +70,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.main_activity, menu)
+       /* menuInflater.inflate(R.menu.main_activity, menu)
         val menuItem = menu.findItem(R.id.action_search)
         val searchView = menuItem.actionView as SearchView
         updateMenuVisibility(menu)
@@ -83,7 +83,8 @@ class MainActivity : AppCompatActivity() {
                 return false;
             }
         })
-        return true
+        return true*/
+        return false
     }
 
     private fun updateMenuVisibility(menu: Menu) {
@@ -105,24 +106,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        stopLocationService()
+        //stopLocationService()
         super.onDestroy()
     }
 
-    private fun startLocationService() {
+    /*private fun startLocationService() {
         val intent = Intent(this, LocationService::class.java).apply {
             action = LocationService.ACTION_START
         }
 
         startForegroundService(intent)
-    }
+    }*/
 
-    private fun stopLocationService() {
+    /*private fun stopLocationService() {
         val intent = Intent(this, LocationService::class.java).apply {
             action = LocationService.ACTION_STOP
         }
         startService(intent)
-    }
+    }*/
 
     private fun requestLocationPermissions() {
         requestPermissions(

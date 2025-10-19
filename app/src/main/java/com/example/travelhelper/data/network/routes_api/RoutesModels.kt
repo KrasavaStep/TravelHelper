@@ -41,6 +41,16 @@ data class RoutesRequest(
     val polylineQuality: String = "HIGH_QUALITY"
 )
 
+data class RoutesRequestWithIntermediates(
+    val origin: Waypoint,
+    val destination: Waypoint,
+    val intermediates: List<Waypoint>,
+    val travelMode: String = "WALK",
+    //val routingPreference: String = "TRAFFIC_AWARE",
+    val polylineQuality: String = "HIGH_QUALITY"
+)
+
 data class Waypoint(
     val location: Location
 )
+

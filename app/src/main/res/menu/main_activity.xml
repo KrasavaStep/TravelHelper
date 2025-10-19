@@ -7,11 +7,11 @@
         android:title="@string/action_settings"
         app:showAsAction="never" /-->
 
-    <item
+    <!--<item
         android:id="@+id/action_search"
         android:visible="false"
         android:icon="@android:drawable/ic_menu_search"
         android:title="@string/action_search"
         app:showAsAction="collapseActionView|ifRoom"
-        app:actionViewClass="androidx.appcompat.widget.SearchView"/>
+        app:actionViewClass="androidx.appcompat.widget.SearchView"/>-->
 </menu>

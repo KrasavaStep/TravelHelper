@@ -22,7 +22,32 @@ class RoutesManager(
 
         return try {
             val response = routesApiService.computeRoutes(apiKey = BuildConfig.ROUTES_API_KEY, request = request)
-            Log.d("geopos 3", "fff ${response.toString()}")
+            if (response.isSuccessful) {
+                response.body()?.routes?.first()
+            } else {
+                null
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun calculateCustomRoute(
+        origin: LatLng,
+        destination: LatLng,
+        intermediates: List<LatLng>
+    ): Route? {
+
+        val request = RoutesRequestWithIntermediates(
+            origin = Waypoint(Location(origin)),
+            destination = Waypoint(Location(destination)),
+            intermediates = intermediates.map { Waypoint(Location(it)) }
+        )
+
+        return try {
+            val response = routesApiService.computeRoutesWithIntermediates(apiKey = BuildConfig.ROUTES_API_KEY, request = request)
             if (response.isSuccessful) {
                 response.body()?.routes?.first()
             } else {

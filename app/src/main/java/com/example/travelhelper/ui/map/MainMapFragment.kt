@@ -28,6 +28,7 @@ import com.example.travelhelper.data.data_model.RouteModel
 import com.example.travelhelper.data.network.overpass_api.OSMPlace
 import com.example.travelhelper.data.network.routes_api.LatLng
 import com.example.travelhelper.data.network.routes_api.Route
+import com.example.travelhelper.data.network.routes_api.RoutesRequestWithIntermediates
 import com.example.travelhelper.databinding.FragmentMainMapBinding
 import com.example.travelhelper.ui.bottom_sheet_view.AttractionBottomSheet
 import com.example.travelhelper.utils.SharedViewModel
@@ -40,6 +41,7 @@ import com.yandex.mapkit.geometry.Polyline
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.InputListener
 import com.yandex.mapkit.map.Map
+import com.yandex.mapkit.map.MapObjectCollection
 import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
 import com.yandex.mapkit.map.PolylineMapObject
@@ -55,6 +57,8 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private lateinit var thisView: View
     private var currentRoute: PolylineMapObject? = null
     private val placemarks = mutableListOf<PlacemarkMapObject>()
+    private lateinit var placemarksCollection: MapObjectCollection
+
     private val customPlaceMarks = mutableListOf<PlacemarkMapObject>()
 
     private val args: MainMapFragmentArgs by navArgs()
@@ -82,15 +86,14 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
 
         checkLocationPermissions()
+        setupObservers(view)
 
         if (args.route != null) {
             mainMapviewModel.getCustomPoints(args.id)
             setupCustomPointObserver()
         }
-        else {
-            setupObservers(view)
-            setupRouteObservers()
-        }
+
+        setupRouteObservers()
 
         sharedViewModel.dialogResult.observe(viewLifecycleOwner) { it ->
             binding.routeInfoView.visibility = View.GONE
@@ -108,6 +111,9 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         binding.closeRouteInfo.setOnClickListener {
             binding.routeInfoView.visibility = View.GONE
             removeRoute()
+            if (args.route != null) {
+                removeCustomPoints()
+            }
         }
     }
 
@@ -124,9 +130,9 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     override fun onDestroy() {
-        placemarks.forEach { it.removeTapListener(onAttractionTapListener) }
-        placemarks.clear()
-        binding.mapView.mapWindow.map.removeInputListener(mapInputListener)
+        placemarksCollection.let {
+            binding.mapView.mapWindow.map.mapObjects.remove(it)
+        }
         super.onDestroy()
     }
 
@@ -179,17 +185,39 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         currentRoute = null
     }
 
+    fun removeCustomPoints() {
+        customPlaceMarks.forEach { it.removeTapListener(onAttractionTapListener) }
+        customPlaceMarks.forEach { binding.mapView.mapWindow.map.mapObjects.remove(it) }
+        customPlaceMarks.clear()
+
+
+        placemarksCollection.isVisible = true
+
+    }
+
     private fun setupCustomPointObserver() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 mainMapviewModel.customPointState.collect { state ->
-                    when(state) {
+                    when (state) {
                         is MainMapViewModel.CustomPointUiState.Error -> {}
                         is MainMapViewModel.CustomPointUiState.Success -> {
                             binding.mapView.mapWindow.map.mapObjects.clear()
                             addCustomPlacemark(state.attractions)
-                            displayCustomRoute(args.route!!)
-                            showCustomRouteInfo(args.route!!)
+                            val originAsModel = state.attractions.first()
+                            val destinationAsModel = state.attractions.last()
+                            val intermediates = state.attractions.map { attraction ->
+                                LatLng(attraction.latitude, attraction.longitude)
+                            }
+                            intermediates.drop(1).dropLast(1)
+                            calculateRoute(
+                                destination = LatLng(
+                                    destinationAsModel.latitude,
+                                    destinationAsModel.longitude
+                                ),
+                                origin = LatLng(originAsModel.latitude, originAsModel.longitude),
+                                intermediates = intermediates
+                            )
                         }
                     }
                 }
@@ -204,6 +232,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
                     when (state) {
                         is MainMapViewModel.RouteUiState.Success -> {
+                            Log.d("TestGeo", "dfsdfs")
                             displayRoute(state.route)
                             showRouteInfo(state.route)
                             binding.loadingView.visibility = View.GONE
@@ -232,24 +261,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
     }
 
-    private fun calculateRoute(destination: LatLng) {
-        val origin = if (BuildConfig.DEBUG) {
-            CITY_GEOPOSITION
-        } else {
-            LatLng(
-                requireContext().getFromPrefs("lat", 0.0f).toDouble(),
-                requireContext().getFromPrefs("lon", 0.0f).toDouble()
-            )
-        }
-
-        mainMapviewModel.calculateRouteResponse(
-            origin = origin,
-            destination = destination
-        )
-
-
-    }
-
     private fun setupObservers(view: View) {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -276,15 +287,48 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
                         is MainMapViewModel.AttractionsUiState.Success -> {
                             binding.reloadAttractions.visibility = View.GONE
-                            binding.changeMapLayout.visibility = View.VISIBLE
-                            binding.showLocation.visibility = View.VISIBLE
+                            binding.changeMapLayout.visibility = View.GONE //TODO
+                            binding.showLocation.visibility = View.GONE //TODO
                             binding.loadingView.visibility = View.GONE
                             addPlacemark(uiState.attractions)
+
+                            if (args.route != null) {
+                                placemarksCollection.isVisible = false
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun calculateRoute(
+        destination: LatLng,
+        origin: LatLng? = null,
+        intermediates: List<LatLng>? = null
+    ) {
+
+        if (origin != null && intermediates != null) {
+            mainMapviewModel.calculateRouteResponse(
+                origin = origin,
+                destination = destination,
+                intermediates = intermediates
+            )
+        } else {
+            val origin = if (BuildConfig.DEBUG) {
+                CITY_GEOPOSITION
+            } else {
+                LatLng(
+                    requireContext().getFromPrefs("lat", 0.0f).toDouble(),
+                    requireContext().getFromPrefs("lon", 0.0f).toDouble()
+                )
+            }
+            mainMapviewModel.calculateRouteResponse(
+                origin = origin,
+                destination = destination
+            )
+        }
+
     }
 
     private fun setupMap() {
@@ -345,19 +389,20 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     private fun addPlacemark(points: List<OSMPlace>) {
+        placemarksCollection = binding.mapView.mapWindow.map.mapObjects.addCollection()
+
         val marker = createBitmapFromVector(R.drawable.map_marker_svg)
 
         val imageProvider = fromBitmap(marker)
         points.forEachIndexed { index, point ->
-            val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
+            placemarksCollection.addPlacemark().apply {
                 geometry = Point(point.latitude, point.longitude)
                 setIcon(imageProvider)
                 opacity = 0.6f
                 setText(point.name)
                 userData = point
+                addTapListener(onAttractionTapListener)
             }
-            placemark.addTapListener(onAttractionTapListener)
-            placemarks.add(placemark)
         }
     }
 
@@ -375,22 +420,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         return bitmap
     }
 
-    private fun displayCustomRoute(route: RouteModel) {
-        val decodedPath = mainMapviewModel.decodePolyline(route)
-
-        val polyline = Polyline(decodedPath)
-
-        currentRoute = binding.mapView.mapWindow.map.mapObjects.addPolyline(polyline)
-
-        currentRoute?.apply {
-            strokeWidth = 5f
-            setStrokeColor(ContextCompat.getColor(requireContext(), R.color.blue))
-            outlineWidth = 1f
-            outlineColor = ContextCompat.getColor(requireContext(), R.color.black)
-        }
-
-        // Масштабируем карту чтобы показать весь маршрут TODO
-    }
     private fun displayRoute(route: Route) {
         val decodedPath = mainMapviewModel.decodePolyline(route)
 
@@ -406,14 +435,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
 
         // Масштабируем карту чтобы показать весь маршрут TODO
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun showCustomRouteInfo(route: RouteModel) {
-
-        binding.routeInfoView.visibility = View.VISIBLE
-        binding.routeLengthText.text = "${getString(R.string.route_length)}: ${route.distanceMeters}"
-        binding.routeTimeText.text = "${getString(R.string.route_time)}: ${route.duration}"
     }
 
     @SuppressLint("SetTextI18n")
