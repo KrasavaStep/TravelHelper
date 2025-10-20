@@ -15,5 +15,6 @@ data class AttractionModel(
     val website: String?,
     val openingHours: String?,
     val isFee: Boolean = false,
-    val isLiked: Boolean = false
+    val isLiked: Boolean = false,
+    val isCustom: Boolean = false
 )

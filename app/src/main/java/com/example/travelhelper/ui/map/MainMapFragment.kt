@@ -366,7 +366,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                 setIcon(imageProvider)
                 opacity = 0.6f
                 setText(point.name)
-                userData = point
+                userData = point.copy(isCustom = true)
             }
             placemark.addTapListener(onAttractionTapListener)
             customPlaceMarks.add(placemark)
