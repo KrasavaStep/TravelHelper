@@ -1,10 +1,15 @@
 package com.example.travelhelper
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.view.Menu
+import android.widget.Toast
 import androidx.activity.viewModels
 import com.google.android.material.navigation.NavigationView
 import androidx.navigation.findNavController
@@ -15,6 +20,8 @@ import androidx.navigation.ui.setupWithNavController
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.getSystemService
 import com.example.travelhelper.databinding.ActivityMainBinding
 import com.example.travelhelper.utils.AppBarViewModel
 import com.yandex.mapkit.MapKitFactory
@@ -22,6 +29,11 @@ import kotlin.getValue
 import androidx.core.view.size
 import androidx.core.view.get
 import com.example.travelhelper.utils.LocationService
+import com.example.travelhelper.utils.Utils.saveToPrefs
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.FusedOrientationProviderClient
+import com.google.android.gms.location.LocationServices
+import okhttp3.internal.http2.Settings
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,6 +43,8 @@ class MainActivity : AppCompatActivity() {
     private val locationPermissionRequestCode = 1000
 
     private val appBarViewModel: AppBarViewModel by viewModels()
+
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
     interface MenuConfig {
         fun shouldShowMenuItems(menu: Menu): Boolean
@@ -42,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         MapKitFactory.setApiKey(BuildConfig.MAPKIT_KEY)
         requestLocationPermissions()
-        //startLocationService()
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -125,14 +139,77 @@ class MainActivity : AppCompatActivity() {
         startService(intent)
     }*/
 
+    private fun getCurrentLocation() {
+        if (checkPermissions()) {
+
+            if (isLocationEnabled()) {
+
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    requestLocationPermissions()
+                    return
+                }
+                fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
+                    val location = task.result
+                    applicationContext.saveToPrefs("lat", location.latitude.toFloat())
+                    applicationContext.saveToPrefs("lon", location.longitude.toFloat())
+                }
+
+            } else {
+                Toast.makeText(this, "Включите GPS", Toast.LENGTH_LONG).show()
+                val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                startActivity(intent)
+            }
+
+        } else {
+            requestLocationPermissions()
+        }
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val locationManager: LocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    private fun checkPermissions(): Boolean = ActivityCompat.checkSelfPermission(
+        this,
+        android.Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+        this,
+        android.Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+
     private fun requestLocationPermissions() {
-        requestPermissions(
+        ActivityCompat.requestPermissions(
+            this,
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ),
             locationPermissionRequestCode
         )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String?>,
+        grantResults: IntArray,
+        deviceId: Int
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId)
+
+        if (requestCode == locationPermissionRequestCode) {
+            getCurrentLocation()
+        }
+
     }
 
 

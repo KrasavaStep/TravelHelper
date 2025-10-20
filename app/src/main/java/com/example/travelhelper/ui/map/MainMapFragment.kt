@@ -51,7 +51,6 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
-    private val locationPermissionRequestCode = 1000
     private val mainMapviewModel by viewModel<MainMapViewModel>(named("mainMapViewModel"))
     private lateinit var sharedViewModel: SharedViewModel
     private lateinit var thisView: View
@@ -164,20 +163,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
     }
-
-    @Deprecated("Deprecated in Java")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        if (requestCode == locationPermissionRequestCode) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                setupMap()
-            }
-        }
-    }
-
     fun removeRoute() {
         if (currentRoute?.isValid == true) {
             binding.mapView.mapWindow.map.mapObjects.remove(currentRoute!!)
@@ -315,14 +300,14 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                 intermediates = intermediates
             )
         } else {
-            val origin = if (BuildConfig.DEBUG) {
-                CITY_GEOPOSITION
-            } else {
-                LatLng(
+//            val origin = if (BuildConfig.DEBUG) {
+//                CITY_GEOPOSITION
+//            } else {
+                val origin = LatLng(
                     requireContext().getFromPrefs("lat", 0.0f).toDouble(),
                     requireContext().getFromPrefs("lon", 0.0f).toDouble()
                 )
-            }
+            //}
             mainMapviewModel.calculateRouteResponse(
                 origin = origin,
                 destination = destination
