@@ -7,6 +7,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
+import com.example.travelhelper.data.data_model.AttractionModel
+import com.example.travelhelper.data.network.overpass_api.OSMPlace
 
 object Utils {
 
@@ -41,4 +43,5 @@ object Utils {
             else -> throw IllegalArgumentException("Тип не поддерживается")
         }
     }
+
 }

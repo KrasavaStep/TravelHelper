@@ -24,10 +24,11 @@ import org.koin.core.qualifier.named
 import kotlin.getValue
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModelProvider
+import com.example.travelhelper.data.data_model.AttractionModel
 import com.example.travelhelper.utils.SharedViewModel
 import com.google.android.material.snackbar.Snackbar
 
-class AttractionBottomSheet(val userData: OSMPlace) : BottomSheetDialogFragment() {
+class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFragment() {
 
     private val viewModel by viewModel<BottomSheetViewModel>(named("bottomSheetViewModel"))
     private lateinit var sharedViewModel: SharedViewModel

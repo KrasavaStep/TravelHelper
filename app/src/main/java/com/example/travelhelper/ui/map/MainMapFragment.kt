@@ -351,7 +351,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
     private val onAttractionTapListener = MapObjectTapListener { mapObject, point ->
         requireActivity().runOnUiThread {
-            showBottomSheet(mapObject.userData as OSMPlace)
+            showBottomSheet(mapObject.userData as AttractionModel)
         }
         true
     }
@@ -379,7 +379,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         val marker = createBitmapFromVector(R.drawable.map_marker_svg)
 
         val imageProvider = fromBitmap(marker)
-        points.forEachIndexed { index, point ->
+        points.map { it.convertToAttractionModel(it, false) }.forEachIndexed { index, point ->
             placemarksCollection.addPlacemark().apply {
                 geometry = Point(point.latitude, point.longitude)
                 setIcon(imageProvider)
@@ -391,7 +391,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
     }
 
-    private fun showBottomSheet(userData: OSMPlace) {
+    private fun showBottomSheet(userData: AttractionModel) {
         val bottomSheet = AttractionBottomSheet(userData)
         bottomSheet.show(childFragmentManager, bottomSheet.tag)
     }
