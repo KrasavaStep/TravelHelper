@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -54,9 +55,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MapKitFactory.setApiKey(BuildConfig.MAPKIT_KEY)
-        requestLocationPermissions()
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -80,6 +78,9 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+        getCurrentLocation()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -140,10 +141,11 @@ class MainActivity : AppCompatActivity() {
     }*/
 
     private fun getCurrentLocation() {
+        Log.d("ROUTE_EX",  "getCurrentLoc ")
         if (checkPermissions()) {
-
+            Log.d("ROUTE_EX",  "if checkPerm = true ")
             if (isLocationEnabled()) {
-
+                Log.d("ROUTE_EX",  "if isLocEnabl = true  ")
                 if (ActivityCompat.checkSelfPermission(
                         this,
                         Manifest.permission.ACCESS_FINE_LOCATION
@@ -155,11 +157,17 @@ class MainActivity : AppCompatActivity() {
                     requestLocationPermissions()
                     return
                 }
-                fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
-                    val location = task.result
-                    applicationContext.saveToPrefs("lat", location.latitude.toFloat())
-                    applicationContext.saveToPrefs("lon", location.longitude.toFloat())
+                try {
+                    fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
+                        val location = task.result
+                        Log.d("ROUTE_EX",  "loc " + location.latitude.toString() + location.longitude.toString())
+                        applicationContext.saveToPrefs("lat", location.latitude.toFloat())
+                        applicationContext.saveToPrefs("lon", location.longitude.toFloat())
+                    }
+                } catch (e: Exception) {
+
                 }
+
 
             } else {
                 Toast.makeText(this, "Включите GPS", Toast.LENGTH_LONG).show()
@@ -188,6 +196,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun requestLocationPermissions() {
+        Log.d("ROUTE_EX",  "requestPermission")
         ActivityCompat.requestPermissions(
             this,
             arrayOf(
@@ -207,6 +216,7 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId)
 
         if (requestCode == locationPermissionRequestCode) {
+            Log.d("ROUTE_EX",  "requestPermission + 1")
             getCurrentLocation()
         }
 

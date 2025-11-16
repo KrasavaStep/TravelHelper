@@ -63,7 +63,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private lateinit var thisView: View
     private var currentRoute: PolylineMapObject? = null
     private val placemarks = mutableListOf<PlacemarkMapObject>()
-    private lateinit var placemarksCollection: MapObjectCollection
+    private var placemarksCollection: MapObjectCollection? = null
 
     private val customPlaceMarks = mutableListOf<PlacemarkMapObject>()
 
@@ -75,7 +75,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MapKitFactory.initialize(requireContext())
     }
 
     override fun onCreateView(
@@ -90,9 +89,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         _binding = FragmentMainMapBinding.bind(view)
         thisView = view
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
-
-        checkLocationPermissions()
-        setCurrentLocationPoint()
+        setupMap()
         setupObservers(view)
 
         mainMapviewModel.getBelarusBorder()
@@ -144,7 +141,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     override fun onDestroy() {
-        placemarksCollection.let {
+        placemarksCollection?.let {
             binding.mapView.mapWindow.map.mapObjects.remove(it)
         }
         super.onDestroy()
@@ -190,7 +187,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         customPlaceMarks.forEach { it.removeTapListener(onAttractionTapListener) }
         customPlaceMarks.forEach { binding.mapView.mapWindow.map.mapObjects.remove(it) }
         customPlaceMarks.clear()
-        placemarksCollection.isVisible = true
+        placemarksCollection?.isVisible = true
 
     }
 
@@ -288,9 +285,10 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                             binding.showLocation.visibility = View.GONE //TODO
                             binding.loadingView.visibility = View.GONE
                             addPlacemark(uiState.attractions)
+                            setCurrentLocationPoint()
 
                             if (args.route != null) {
-                                placemarksCollection.isVisible = false
+                                placemarksCollection?.isVisible = false
                             }
                         }
                     }
@@ -314,10 +312,11 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     fun setCurrentLocationPoint() {
-        val origin = LatLng(
-            requireContext().getFromPrefs("lat", 0.0f).toDouble(),
-            requireContext().getFromPrefs("lon", 0.0f).toDouble()
-        )
+        val lat = requireContext().getFromPrefs("lat", 52.4171724f).toDouble()
+        val lon = requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
+
+        val origin = LatLng(lat, lon)
+
 
         val marker = createBitmapFromVector(R.drawable.current_location)
 
@@ -350,9 +349,12 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 //                CITY_GEOPOSITION
 //            } else {
             val origin = LatLng(
-                requireContext().getFromPrefs("lat", 0.0f).toDouble(),
-                requireContext().getFromPrefs("lon", 0.0f).toDouble()
+                requireContext().getFromPrefs("lat", 52.4171724f).toDouble(),
+                requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
             )
+
+            Log.d("ROUTE_EX", origin.toString() + " " + destination.toString())
+
             //}
             mainMapviewModel.calculateRouteResponse(
                 origin = origin,
@@ -366,8 +368,8 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         // Перемещаем камеру к нужной точке
         val targetPoint = Point(52.4171724, 30.9963954) // Gomel
         val currentPoint = Point(
-            requireContext().getFromPrefs("lat", 0.0f).toDouble(),
-            requireContext().getFromPrefs("lon", 0.0f).toDouble()
+            requireContext().getFromPrefs("lat", 52.4171724f).toDouble(),
+            requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
         )
         binding.mapView.mapWindow.map.move(
             CameraPosition(currentPoint, 18.0f, 0.0f, 0.0f),
@@ -429,7 +431,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
         val imageProvider = fromBitmap(marker)
         points.map { it.convertToAttractionModel(it, false) }.forEachIndexed { index, point ->
-            placemarksCollection.addPlacemark().apply {
+            placemarksCollection?.addPlacemark()?.apply {
                 geometry = Point(point.latitude, point.longitude)
                 setIcon(imageProvider)
                 opacity = 0.6f
