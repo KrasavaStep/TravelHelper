@@ -365,8 +365,12 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private fun setupMap() {
         // Перемещаем камеру к нужной точке
         val targetPoint = Point(52.4171724, 30.9963954) // Gomel
+        val currentPoint = Point(
+            requireContext().getFromPrefs("lat", 0.0f).toDouble(),
+            requireContext().getFromPrefs("lon", 0.0f).toDouble()
+        )
         binding.mapView.mapWindow.map.move(
-            CameraPosition(targetPoint, 11.0f, 0.0f, 0.0f),
+            CameraPosition(currentPoint, 18.0f, 0.0f, 0.0f),
             Animation(Animation.Type.SMOOTH, 1f),
             null
         )
