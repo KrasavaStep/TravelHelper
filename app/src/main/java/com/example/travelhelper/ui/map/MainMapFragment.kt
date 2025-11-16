@@ -3,8 +3,10 @@ package com.example.travelhelper.ui.map
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -36,7 +38,9 @@ import com.example.travelhelper.utils.Utils.getFromPrefs
 import com.google.android.material.snackbar.Snackbar
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
+import com.yandex.mapkit.geometry.LinearRing
 import com.yandex.mapkit.geometry.Point
+import com.yandex.mapkit.geometry.Polygon
 import com.yandex.mapkit.geometry.Polyline
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.InputListener
@@ -44,11 +48,14 @@ import com.yandex.mapkit.map.Map
 import com.yandex.mapkit.map.MapObjectCollection
 import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
+import com.yandex.mapkit.map.PolygonMapObject
 import com.yandex.mapkit.map.PolylineMapObject
 import com.yandex.runtime.image.ImageProvider.fromBitmap
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
+import androidx.core.graphics.toColorInt
+import com.example.travelhelper.utils.BorderData
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val mainMapviewModel by viewModel<MainMapViewModel>(named("mainMapViewModel"))
@@ -85,7 +92,15 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
 
         checkLocationPermissions()
+        setCurrentLocationPoint()
         setupObservers(view)
+
+        mainMapviewModel.getBelarusBorder()
+        mainMapviewModel.borderLiveData.observe(viewLifecycleOwner) { borderList ->
+            borderList.forEach { independentBorder ->
+                drawDetailedBelarusBorder(independentBorder)
+            }
+        }
 
         if (args.route != null) {
             mainMapviewModel.getCustomPoints(args.id)
@@ -163,6 +178,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
     }
+
     fun removeRoute() {
         if (currentRoute?.isValid == true) {
             binding.mapView.mapWindow.map.mapObjects.remove(currentRoute!!)
@@ -174,8 +190,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         customPlaceMarks.forEach { it.removeTapListener(onAttractionTapListener) }
         customPlaceMarks.forEach { binding.mapView.mapWindow.map.mapObjects.remove(it) }
         customPlaceMarks.clear()
-
-
         placemarksCollection.isVisible = true
 
     }
@@ -217,7 +231,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
                     when (state) {
                         is MainMapViewModel.RouteUiState.Success -> {
-                            Log.d("TestGeo", "dfsdfs")
                             displayRoute(state.route)
                             showRouteInfo(state.route)
                             binding.loadingView.visibility = View.GONE
@@ -229,7 +242,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                                 state.exception.message.toString(),
                                 Snackbar.LENGTH_LONG
                             ).show()
-                            Log.d("rout exc", state.exception.message.toString())
                             binding.loadingView.visibility = View.GONE
                         }
 
@@ -287,6 +299,40 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
     }
 
+    private fun drawDetailedBelarusBorder(border: BorderData) {
+
+        val outerRing = LinearRing(border.points)
+
+        val polygon = Polygon(outerRing, emptyList())
+
+        binding.mapView.mapWindow.map.mapObjects.addPolygon(polygon).apply {
+            strokeColor = resources.getColor(R.color.border_fill_color)
+            strokeWidth = 4.0f
+            isGeodesic = true // учитывает кривизну Земли
+            fillColor = resources.getColor(R.color.transparent)
+        }
+    }
+
+    fun setCurrentLocationPoint() {
+        val origin = LatLng(
+            requireContext().getFromPrefs("lat", 0.0f).toDouble(),
+            requireContext().getFromPrefs("lon", 0.0f).toDouble()
+        )
+
+        val marker = createBitmapFromVector(R.drawable.current_location)
+
+        val imageProvider = fromBitmap(marker)
+
+        val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
+            geometry = Point(origin.latitude, origin.longitude)
+            setIcon(imageProvider)
+            opacity = 0.6f
+            setText(getString(R.string.current_location))
+        }
+        placemark.addTapListener(onAttractionTapListener)
+        customPlaceMarks.add(placemark)
+    }
+
     private fun calculateRoute(
         destination: LatLng,
         origin: LatLng? = null,
@@ -303,10 +349,10 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 //            val origin = if (BuildConfig.DEBUG) {
 //                CITY_GEOPOSITION
 //            } else {
-                val origin = LatLng(
-                    requireContext().getFromPrefs("lat", 0.0f).toDouble(),
-                    requireContext().getFromPrefs("lon", 0.0f).toDouble()
-                )
+            val origin = LatLng(
+                requireContext().getFromPrefs("lat", 0.0f).toDouble(),
+                requireContext().getFromPrefs("lon", 0.0f).toDouble()
+            )
             //}
             mainMapviewModel.calculateRouteResponse(
                 origin = origin,
@@ -329,7 +375,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         binding.mapView.mapWindow.map.isRotateGesturesEnabled = true
         binding.mapView.mapWindow.map.isZoomGesturesEnabled = true
         binding.mapView.mapWindow.map.isScrollGesturesEnabled = true
-
         // Добавляем обработчики
         setupMapListeners()
     }

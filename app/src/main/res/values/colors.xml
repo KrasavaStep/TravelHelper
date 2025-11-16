@@ -5,4 +5,8 @@
     <color name="white">#FFFFFFFF</color>
 
     <color name="gray">#A6A6A6</color>
+
+    <color name="border_fill_color">#544DC7</color>
+
+    <color name="transparent">#00FFFFFF</color>
 </resources>

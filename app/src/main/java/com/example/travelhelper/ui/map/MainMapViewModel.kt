@@ -1,5 +1,7 @@
 package com.example.travelhelper.ui.map
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.travelhelper.data.data_model.AttractionModel
@@ -11,16 +13,21 @@ import com.example.travelhelper.data.network.routes_api.LatLng
 import com.example.travelhelper.data.network.routes_api.Route
 import com.example.travelhelper.data.network.routes_api.RoutesManager
 import com.example.travelhelper.data.network.routes_api.RoutesRequestWithIntermediates
+import com.example.travelhelper.utils.BorderData
+import com.example.travelhelper.utils.GsonParser
 import com.yandex.mapkit.geometry.Point
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import okhttp3.Dispatcher
 
 class MainMapViewModel(
     private val repository: OSMRepository,
     private val routesManager: RoutesManager,
-    private val attractionRepository: AttractionsRepository
+    private val attractionRepository: AttractionsRepository,
+    private val gsonParser: GsonParser
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AttractionsUiState>(AttractionsUiState.Loading(true))
@@ -31,6 +38,9 @@ class MainMapViewModel(
 
     private val _routeState = MutableStateFlow<RouteUiState>(RouteUiState.Loading(true))
     val routeState: StateFlow<RouteUiState> = _routeState.asStateFlow()
+
+    private val _borderLiveData = MutableLiveData<List<BorderData>>()
+    val borderLiveData: LiveData<List<BorderData>> = _borderLiveData
 
     fun loadAttractions(cityName: String) {
         viewModelScope.launch {
@@ -93,6 +103,11 @@ class MainMapViewModel(
         return listOf(duration, distance)
     }
 
+    fun getBelarusBorder() {
+        gsonParser.parseBorderWithGson()?.let {
+            _borderLiveData.value = it
+        }
+    }
 
     sealed class RouteUiState {
         data class Success(val route: Route) : RouteUiState()

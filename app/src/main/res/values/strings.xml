@@ -31,4 +31,6 @@
     <string name="route_time">Время в пути</string>
     <string name="route_length">Расстояние</string>
 
+    <string name="current_location">Ваше местоположение</string>
+
 </resources>
