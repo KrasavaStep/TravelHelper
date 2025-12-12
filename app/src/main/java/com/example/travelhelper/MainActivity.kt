@@ -159,11 +159,20 @@ class MainActivity : AppCompatActivity() {
                 }
                 try {
                     fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
-                        val location = task.result
-                        Log.d("ROUTE_EX",  "loc " + location.latitude.toString() + location.longitude.toString())
-                        applicationContext.saveToPrefs("lat", location.latitude.toFloat())
-                        applicationContext.saveToPrefs("lon", location.longitude.toFloat())
+                        // Проверяем, что задача выполнилась успешно И что результат (location) не null
+                        if (task.isSuccessful && task.result != null) {
+                            val location = task.result
+                            // Теперь мы внутри блока, где location гарантированно не null
+                            Log.d("ROUTE_EX",  "loc " + location.latitude.toString() + location.longitude.toString())
+                            applicationContext.saveToPrefs("lat", location.latitude.toFloat())
+                            applicationContext.saveToPrefs("lon", location.longitude.toFloat())
+                        } else {
+                            // Этот блок выполнится, если местоположение получить не удалось
+                            Log.w("ROUTE_EX", "Не удалось получить последнее известное местоположение.", task.exception)
+                            Toast.makeText(this, "Не удалось определить ваше местоположение", Toast.LENGTH_SHORT).show()
+                        }
                     }
+
                 } catch (e: Exception) {
 
                 }
