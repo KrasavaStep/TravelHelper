@@ -8,6 +8,12 @@ import kotlin.String
 
 class AttractionsRepository(private val attractionsDao: AtractionDao) {
 
+    suspend fun searchAttractions(query: String): List<AttractionModel> {
+        return withContext(Dispatchers.IO) {
+            val results = attractionsDao.searchAttractions("%$query%")
+            return@withContext results.map { convertToAttractionModel(it) }
+        }
+    }
 
     suspend fun getAllAttractionsData(): List<AttractionEntity> {
         return withContext(Dispatchers.IO) {

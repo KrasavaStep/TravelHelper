@@ -42,6 +42,9 @@ class MainMapViewModel(
     private val _borderLiveData = MutableLiveData<List<BorderData>>()
     val borderLiveData: LiveData<List<BorderData>> = _borderLiveData
 
+    private val _searchState = MutableStateFlow<List<AttractionModel>>(emptyList())
+    val searchState: StateFlow<List<AttractionModel>> = _searchState.asStateFlow()
+
     fun loadAttractions(cityName: String) {
         viewModelScope.launch {
             try {
@@ -88,6 +91,16 @@ class MainMapViewModel(
     fun getCustomPoints(routeId: Int) {
         viewModelScope.launch {
             _customPointState.value = CustomPointUiState.Success(attractionRepository.getCustomPoints(routeId))
+        }
+    }
+
+    fun searchAttractions(query: String) {
+        viewModelScope.launch {
+            if (query.isNotBlank() && query.length >= 2) {
+                _searchState.value = attractionRepository.searchAttractions(query)
+            } else {
+                _searchState.value = emptyList()
+            }
         }
     }
 

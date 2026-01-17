@@ -7,85 +7,54 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.travelhelper.data.data_model.RouteModel
 import com.example.travelhelper.databinding.ImbededRoutesItemBinding
-import com.example.travelhelper.databinding.ItemRouteHeaderBinding
 
-class RoutesAdapter(
+class RoutesAdapter (
     private val clickListener: ItemClickListener
-) : ListAdapter<RoutesAdapter.RecyclerItem, RecyclerView.ViewHolder>(DIFF_CALLBACK) {
+) : ListAdapter<RouteModel, RoutesAdapter.ViewHolder>(DIFF_CALLBACK) {
 
+
+    // ДОБАВЛЕНО: структура для группировки
     sealed class RecyclerItem {
         data class Header(val category: String) : RecyclerItem()
+        data class Divider(val category: String) : RecyclerItem()
         data class Item(val routeItem: RouteModel) : RecyclerItem()
     }
 
-    override fun getItemViewType(position: Int): Int {
-        return when (getItem(position)) {
-            is RecyclerItem.Header -> TYPE_HEADER
-            is RecyclerItem.Item -> TYPE_ITEM
-        }
-    }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
-        return when (viewType) {
-            TYPE_HEADER -> {
-                val binding = ItemRouteHeaderBinding.inflate(layoutInflater, parent, false)
-                HeaderViewHolder(binding)
-            }
-            TYPE_ITEM -> {
-                val binding = ImbededRoutesItemBinding.inflate(layoutInflater, parent, false)
-                ItemViewHolder(binding)
-            }
-            else -> throw IllegalArgumentException("Unknown viewType: $viewType")
-        }
+        val binding = ImbededRoutesItemBinding.inflate(layoutInflater, parent, false)
+
+        return ViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
-        when (holder) {
-            is HeaderViewHolder -> holder.bind((item as RecyclerItem.Header).category)
-            is ItemViewHolder -> holder.bind((item as RecyclerItem.Item).routeItem)
-        }
+        holder.binding.apply {
+
+            routeName.text = item.routeName
+            val routeDuration = item.duration.substring(0, item.duration.length - 1)
+            routeType.text = "${item.type} ${formatDistance(item.distanceMeters)} ${formatDuration(routeDuration.toInt())}"
+
+            routeDesc.text = item.description
+
+            }
     }
 
-    inner class HeaderViewHolder(private val binding: ItemRouteHeaderBinding) :
+    inner class ViewHolder(val binding: ImbededRoutesItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        fun bind(category: String) {
-            binding.headerTitle.text = category
-        }
-    }
-
-    inner class ItemViewHolder(private val binding: ImbededRoutesItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: RouteModel) {
-            binding.apply {
-                routeName.text = item.routeName
-                
-                val durationValue = try {
-                    item.duration.substring(0, item.duration.length - 1).toInt()
-                } catch (e: Exception) {
-                    0
-                }
-
-                routeType.text = "${item.type} ${formatDistance(item.distanceMeters)} ${formatDuration(durationValue)}"
-                routeDesc.text = item.description
-
-                root.setOnClickListener {
-                    clickListener.onRouteClicked(item)
+        init {
+            binding.root.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    val routeItem = getItem(adapterPosition)
+                    clickListener.onRouteClicked(routeItem)
                 }
             }
         }
     }
 
-    fun setData(routes: List<RouteModel>) {
-        val items = mutableListOf<RecyclerItem>()
-        val grouped = routes.groupBy { it.routeCategory }
-        
-        grouped.forEach { (category, routesInCategory) ->
-            items.add(RecyclerItem.Header(category))
-            items.addAll(routesInCategory.map { RecyclerItem.Item(it) })
-        }
-        submitList(items)
+    fun setData(currencies: List<RouteModel>) {
+        submitList(currencies.toMutableList())
     }
 
     interface ItemClickListener {
@@ -95,6 +64,7 @@ class RoutesAdapter(
     private fun formatDuration(seconds: Int): String {
         val hours = seconds / 3600
         val minutes = (seconds % 3600) / 60
+
         return when {
             hours > 0 -> "${hours}ч ${minutes}м"
             else -> "${minutes}м"
@@ -108,24 +78,29 @@ class RoutesAdapter(
         }
     }
 
-    companion object {
-        private const val TYPE_HEADER = 0
-        private const val TYPE_ITEM = 1
-
-        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RecyclerItem>() {
-            override fun areItemsTheSame(oldItem: RecyclerItem, newItem: RecyclerItem): Boolean {
-                return when {
-                    oldItem is RecyclerItem.Header && newItem is RecyclerItem.Header -> 
-                        oldItem.category == newItem.category
-                    oldItem is RecyclerItem.Item && newItem is RecyclerItem.Item -> 
-                        oldItem.routeItem.id == newItem.routeItem.id
-                    else -> false
-                }
-            }
-
-            override fun areContentsTheSame(oldItem: RecyclerItem, newItem: RecyclerItem): Boolean {
-                return oldItem == newItem
-            }
-        }
+    override fun getItemViewType(position: Int): Int {
+        return super.getItemViewType(position)
     }
+
+    companion object {
+
+        val DIFF_CALLBACK: DiffUtil.ItemCallback<RouteModel> =
+            object : DiffUtil.ItemCallback<RouteModel>() {
+                override fun areItemsTheSame(
+                    oldItem: RouteModel,
+                    newItem: RouteModel
+                ): Boolean {
+                    return oldItem.id == newItem.id
+                }
+
+                override fun areContentsTheSame(
+                    oldItem: RouteModel,
+                    newItem: RouteModel
+                ): Boolean {
+                    return oldItem == newItem
+                }
+
+            }
+    }
+
 }

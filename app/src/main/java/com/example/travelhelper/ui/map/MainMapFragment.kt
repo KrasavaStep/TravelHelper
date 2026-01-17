@@ -3,16 +3,15 @@ package com.example.travelhelper.ui.map
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
@@ -22,15 +21,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.navArgs
-import com.example.travelhelper.BuildConfig
 import com.example.travelhelper.MainActivity
 import com.example.travelhelper.R
 import com.example.travelhelper.data.data_model.AttractionModel
-import com.example.travelhelper.data.data_model.RouteModel
 import com.example.travelhelper.data.network.overpass_api.OSMPlace
 import com.example.travelhelper.data.network.routes_api.LatLng
 import com.example.travelhelper.data.network.routes_api.Route
-import com.example.travelhelper.data.network.routes_api.RoutesRequestWithIntermediates
 import com.example.travelhelper.databinding.FragmentMainMapBinding
 import com.example.travelhelper.ui.bottom_sheet_view.AttractionBottomSheet
 import com.example.travelhelper.utils.SharedViewModel
@@ -42,19 +38,11 @@ import com.yandex.mapkit.geometry.LinearRing
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polygon
 import com.yandex.mapkit.geometry.Polyline
-import com.yandex.mapkit.map.CameraPosition
-import com.yandex.mapkit.map.InputListener
-import com.yandex.mapkit.map.Map
-import com.yandex.mapkit.map.MapObjectCollection
-import com.yandex.mapkit.map.MapObjectTapListener
-import com.yandex.mapkit.map.PlacemarkMapObject
-import com.yandex.mapkit.map.PolygonMapObject
-import com.yandex.mapkit.map.PolylineMapObject
+import com.yandex.mapkit.map.*
 import com.yandex.runtime.image.ImageProvider.fromBitmap
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
-import androidx.core.graphics.toColorInt
 import com.example.travelhelper.utils.BorderData
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
@@ -62,41 +50,35 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private lateinit var sharedViewModel: SharedViewModel
     private lateinit var thisView: View
     private var currentRoute: PolylineMapObject? = null
-    private val placemarks = mutableListOf<PlacemarkMapObject>()
     private var placemarksCollection: MapObjectCollection? = null
-
     private val customPlaceMarks = mutableListOf<PlacemarkMapObject>()
-
     private val args: MainMapFragmentArgs by navArgs()
 
     private var _binding: FragmentMainMapBinding? = null
-    private val binding
-        get() = _binding!!
+    private val binding get() = _binding!!
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
+    private lateinit var searchAdapter: SearchAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.fragment_main_map, container, false)
+        _binding = FragmentMainMapBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        _binding = FragmentMainMapBinding.bind(view)
         thisView = view
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
+        
+        setupSearch()
         setupMap()
         setupObservers(view)
 
         mainMapviewModel.getBelarusBorder()
         mainMapviewModel.borderLiveData.observe(viewLifecycleOwner) { borderList ->
-            borderList.forEach { independentBorder ->
-                drawDetailedBelarusBorder(independentBorder)
-            }
+            borderList.forEach { drawDetailedBelarusBorder(it) }
         }
 
         if (args.route != null) {
@@ -109,8 +91,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         sharedViewModel.dialogResult.observe(viewLifecycleOwner) { it ->
             binding.routeInfoView.visibility = View.GONE
             removeRoute()
-            val destination = LatLng(it[1], it[0])
-            calculateRoute(destination)
+            calculateRoute(LatLng(it[1], it[0]))
         }
 
         binding.reloadImg.setOnClickListener {
@@ -122,10 +103,243 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         binding.closeRouteInfo.setOnClickListener {
             binding.routeInfoView.visibility = View.GONE
             removeRoute()
-            if (args.route != null) {
-                removeCustomPoints()
+            if (args.route != null) removeCustomPoints()
+        }
+    }
+
+    private fun setupSearch() {
+        searchAdapter = SearchAdapter { attraction ->
+            showBottomSheet(attraction)
+            binding.searchResultsRecycler.visibility = View.GONE
+            
+            // Перемещаем камеру к выбранному объекту
+            val point = Point(attraction.latitude, attraction.longitude)
+            binding.mapView.mapWindow.map.move(
+                CameraPosition(point, 16.0f, 0.0f, 0.0f),
+                Animation(Animation.Type.SMOOTH, 1f),
+                null
+            )
+        }
+        binding.searchResultsRecycler.adapter = searchAdapter
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainMapviewModel.searchState.collect { results ->
+                    if (results.isNotEmpty()) {
+                        searchAdapter.submitList(results)
+                        binding.searchResultsRecycler.visibility = View.VISIBLE
+                    } else {
+                        binding.searchResultsRecycler.visibility = View.GONE
+                    }
+                }
             }
         }
+    }
+
+    override fun shouldShowMenuItems(menu: Menu): Boolean {
+        val searchItem = menu.findItem(R.id.action_search)
+        val searchView = searchItem?.actionView as? SearchView
+        
+        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                query?.let { mainMapviewModel.searchAttractions(it) }
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                newText?.let { mainMapviewModel.searchAttractions(it) }
+                return true
+            }
+        })
+        return true
+    }
+
+    private fun setupMap() {
+        val currentPoint = Point(
+            requireContext().getFromPrefs("lat", 52.4171724f).toDouble(),
+            requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
+        )
+        binding.mapView.mapWindow.map.move(
+            CameraPosition(currentPoint, 18.0f, 0.0f, 0.0f),
+            Animation(Animation.Type.SMOOTH, 1f),
+            null
+        )
+        binding.mapView.mapWindow.map.isRotateGesturesEnabled = true
+        binding.mapView.mapWindow.map.isZoomGesturesEnabled = true
+        binding.mapView.mapWindow.map.isScrollGesturesEnabled = true
+    }
+
+    private fun setupObservers(view: View) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainMapviewModel.loadAttractions(CITY)
+                mainMapviewModel.uiState.collect { uiState ->
+                    when (uiState) {
+                        is MainMapViewModel.AttractionsUiState.Error -> {
+                            binding.reloadAttractions.visibility = View.VISIBLE
+                            binding.errorMsg.text = uiState.exception.message
+                        }
+                        is MainMapViewModel.AttractionsUiState.Loading -> {
+                            binding.loadingView.visibility = if (uiState.isLoading) View.VISIBLE else View.GONE
+                        }
+                        is MainMapViewModel.AttractionsUiState.Success -> {
+                            binding.reloadAttractions.visibility = View.GONE
+                            addPlacemark(uiState.attractions)
+                            setCurrentLocationPoint()
+                            if (args.route != null) placemarksCollection?.isVisible = false
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun addPlacemark(points: List<OSMPlace>) {
+        placemarksCollection = binding.mapView.mapWindow.map.mapObjects.addCollection()
+        val marker = createBitmapFromVector(R.drawable.map_marker_svg)
+        val imageProvider = fromBitmap(marker)
+        
+        points.map { it.convertToAttractionModel(it, false) }.forEach { point ->
+            placemarksCollection?.addPlacemark()?.apply {
+                geometry = Point(point.latitude, point.longitude)
+                setIcon(imageProvider)
+                opacity = 0.6f
+                setText(point.name)
+                userData = point
+                addTapListener(onAttractionTapListener)
+            }
+        }
+    }
+
+    private val onAttractionTapListener = MapObjectTapListener { mapObject, _ ->
+        showBottomSheet(mapObject.userData as AttractionModel)
+        true
+    }
+
+    private fun showBottomSheet(userData: AttractionModel) {
+        val bottomSheet = AttractionBottomSheet(userData)
+        bottomSheet.show(childFragmentManager, bottomSheet.tag)
+    }
+
+    private fun drawDetailedBelarusBorder(border: BorderData) {
+        val polygon = Polygon(LinearRing(border.points), emptyList())
+        binding.mapView.mapWindow.map.mapObjects.addPolygon(polygon).apply {
+            strokeColor = resources.getColor(R.color.border_fill_color)
+            strokeWidth = 4.0f
+            fillColor = resources.getColor(R.color.transparent)
+        }
+    }
+
+    fun setCurrentLocationPoint() {
+        val lat = requireContext().getFromPrefs("lat", 52.4171724f).toDouble()
+        val lon = requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
+        val marker = createBitmapFromVector(R.drawable.current_location)
+        val imageProvider = fromBitmap(marker)
+
+        val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
+            geometry = Point(lat, lon)
+            setIcon(imageProvider)
+            opacity = 0.6f
+            setText(getString(R.string.current_location))
+        }
+        customPlaceMarks.add(placemark)
+    }
+
+    private fun calculateRoute(destination: LatLng, origin: LatLng? = null, intermediates: List<LatLng>? = null) {
+        val startPoint = origin ?: LatLng(
+            requireContext().getFromPrefs("lat", 52.4171724f).toDouble(),
+            requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
+        )
+        mainMapviewModel.calculateRouteResponse(startPoint, destination, intermediates)
+    }
+
+    private fun setupRouteObservers() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainMapviewModel.routeState.collect { state ->
+                    when (state) {
+                        is MainMapViewModel.RouteUiState.Success -> {
+                            displayRoute(state.route)
+                            showRouteInfo(state.route)
+                        }
+                        is MainMapViewModel.RouteUiState.Error -> {
+                            Snackbar.make(thisView, state.exception.message.toString(), Snackbar.LENGTH_LONG).show()
+                        }
+                        else -> {}
+                    }
+                }
+            }
+        }
+    }
+
+    private fun displayRoute(route: Route) {
+        val decodedPath = mainMapviewModel.decodePolyline(route)
+        currentRoute = binding.mapView.mapWindow.map.mapObjects.addPolyline(Polyline(decodedPath))
+        currentRoute?.apply {
+            strokeWidth = 5f
+            setStrokeColor(ContextCompat.getColor(requireContext(), R.color.blue))
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun showRouteInfo(route: Route) {
+        val routeInfo = mainMapviewModel.getRouteInfo(route)
+        binding.routeInfoView.visibility = View.VISIBLE
+        binding.routeLengthText.text = "${getString(R.string.route_length)}: ${routeInfo[1]}"
+        binding.routeTimeText.text = "${getString(R.string.route_time)}: ${routeInfo[0]}"
+    }
+
+    fun removeRoute() {
+        currentRoute?.let { if (it.isValid) binding.mapView.mapWindow.map.mapObjects.remove(it) }
+        currentRoute = null
+    }
+
+    fun removeCustomPoints() {
+        customPlaceMarks.forEach { binding.mapView.mapWindow.map.mapObjects.remove(it) }
+        customPlaceMarks.clear()
+        placemarksCollection?.isVisible = true
+    }
+
+    private fun setupCustomPointObserver() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainMapviewModel.customPointState.collect { state ->
+                    if (state is MainMapViewModel.CustomPointUiState.Success) {
+                        binding.mapView.mapWindow.map.mapObjects.clear()
+                        addCustomPlacemark(state.attractions)
+                        calculateRoute(
+                            LatLng(state.attractions.last().latitude, state.attractions.last().longitude),
+                            LatLng(state.attractions.first().latitude, state.attractions.first().longitude),
+                            state.attractions.map { LatLng(it.latitude, it.longitude) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun addCustomPlacemark(points: List<AttractionModel>) {
+        val marker = createBitmapFromVector(R.drawable.map_marker_svg)
+        val imageProvider = fromBitmap(marker)
+        points.forEach { point ->
+            val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
+                geometry = Point(point.latitude, point.longitude)
+                setIcon(imageProvider)
+                setText(point.name)
+                userData = point.copy(isCustom = true)
+            }
+            placemark.addTapListener(onAttractionTapListener)
+            customPlaceMarks.add(placemark)
+        }
+    }
+
+    private fun createBitmapFromVector(art: Int): Bitmap? {
+        val drawable = ContextCompat.getDrawable(requireContext(), art) ?: return null
+        val bitmap = createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bitmap
     }
 
     override fun onStart() {
@@ -140,352 +354,12 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         super.onStop()
     }
 
-    override fun onDestroy() {
-        placemarksCollection?.let {
-            binding.mapView.mapWindow.map.mapObjects.remove(it)
-        }
-        super.onDestroy()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        (activity as? MainActivity)?.setMenuConfig(this)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        (activity as? MainActivity)?.setMenuConfig(null)
-    }
-
-    override fun shouldShowMenuItems(menu: Menu): Boolean = true
-
-    private fun checkLocationPermissions() {
-        if (hasLocationPermissions()) {
-            setupMap()
-        }
-    }
-
-    private fun hasLocationPermissions(): Boolean {
-        return ActivityCompat.checkSelfPermission(
-            requireContext(),
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(
-                    requireContext(),
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    fun removeRoute() {
-        if (currentRoute?.isValid == true) {
-            binding.mapView.mapWindow.map.mapObjects.remove(currentRoute!!)
-        }
-        currentRoute = null
-    }
-
-    fun removeCustomPoints() {
-        customPlaceMarks.forEach { it.removeTapListener(onAttractionTapListener) }
-        customPlaceMarks.forEach { binding.mapView.mapWindow.map.mapObjects.remove(it) }
-        customPlaceMarks.clear()
-        placemarksCollection?.isVisible = true
-
-    }
-
-    private fun setupCustomPointObserver() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mainMapviewModel.customPointState.collect { state ->
-                    when (state) {
-                        is MainMapViewModel.CustomPointUiState.Error -> {}
-                        is MainMapViewModel.CustomPointUiState.Success -> {
-                            binding.mapView.mapWindow.map.mapObjects.clear()
-                            addCustomPlacemark(state.attractions)
-                            val originAsModel = state.attractions.first()
-                            val destinationAsModel = state.attractions.last()
-                            val intermediates = state.attractions.map { attraction ->
-                                LatLng(attraction.latitude, attraction.longitude)
-                            }
-                            intermediates.drop(1).dropLast(1)
-                            calculateRoute(
-                                destination = LatLng(
-                                    destinationAsModel.latitude,
-                                    destinationAsModel.longitude
-                                ),
-                                origin = LatLng(originAsModel.latitude, originAsModel.longitude),
-                                intermediates = intermediates
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun setupRouteObservers() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mainMapviewModel.routeState.collect { state ->
-
-                    when (state) {
-                        is MainMapViewModel.RouteUiState.Success -> {
-                            displayRoute(state.route)
-                            showRouteInfo(state.route)
-                            binding.loadingView.visibility = View.GONE
-                        }
-
-                        is MainMapViewModel.RouteUiState.Error -> {
-                            Snackbar.make(
-                                thisView,
-                                state.exception.message.toString(),
-                                Snackbar.LENGTH_LONG
-                            ).show()
-                            binding.loadingView.visibility = View.GONE
-                        }
-
-                        is MainMapViewModel.RouteUiState.Loading -> {
-                            if (state.isLoading) {
-                                binding.loadingView.visibility = View.VISIBLE
-                            } else {
-                                binding.loadingView.visibility = View.GONE
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun setupObservers(view: View) {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mainMapviewModel.loadAttractions(CITY)
-                mainMapviewModel.uiState.collect { uiState ->
-                    when (uiState) {
-                        is MainMapViewModel.AttractionsUiState.Error -> {
-                            binding.reloadAttractions.visibility = View.VISIBLE
-                            binding.errorMsg.text = uiState.exception.message
-                            binding.changeMapLayout.visibility = View.GONE
-                            binding.showLocation.visibility = View.GONE
-                        }
-
-                        is MainMapViewModel.AttractionsUiState.Loading -> {
-                            if (uiState.isLoading) {
-                                binding.reloadAttractions.visibility = View.GONE
-                                binding.loadingView.visibility = View.VISIBLE
-                                binding.changeMapLayout.visibility = View.GONE
-                                binding.showLocation.visibility = View.GONE
-                            } else {
-                                binding.loadingView.visibility = View.GONE
-                            }
-                        }
-
-                        is MainMapViewModel.AttractionsUiState.Success -> {
-                            binding.reloadAttractions.visibility = View.GONE
-                            binding.changeMapLayout.visibility = View.GONE //TODO
-                            binding.showLocation.visibility = View.GONE //TODO
-                            binding.loadingView.visibility = View.GONE
-                            addPlacemark(uiState.attractions)
-                            setCurrentLocationPoint()
-
-                            if (args.route != null) {
-                                placemarksCollection?.isVisible = false
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun drawDetailedBelarusBorder(border: BorderData) {
-
-        val outerRing = LinearRing(border.points)
-
-        val polygon = Polygon(outerRing, emptyList())
-
-        binding.mapView.mapWindow.map.mapObjects.addPolygon(polygon).apply {
-            strokeColor = resources.getColor(R.color.border_fill_color)
-            strokeWidth = 4.0f
-            isGeodesic = true // учитывает кривизну Земли
-            fillColor = resources.getColor(R.color.transparent)
-        }
-    }
-
-    fun setCurrentLocationPoint() {
-        val lat = requireContext().getFromPrefs("lat", 52.4171724f).toDouble()
-        val lon = requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
-
-        val origin = LatLng(lat, lon)
-
-
-        val marker = createBitmapFromVector(R.drawable.current_location)
-
-        val imageProvider = fromBitmap(marker)
-
-        val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
-            geometry = Point(origin.latitude, origin.longitude)
-            setIcon(imageProvider)
-            opacity = 0.6f
-            setText(getString(R.string.current_location))
-        }
-        placemark.addTapListener(onAttractionTapListener)
-        customPlaceMarks.add(placemark)
-    }
-
-    private fun calculateRoute(
-        destination: LatLng,
-        origin: LatLng? = null,
-        intermediates: List<LatLng>? = null
-    ) {
-
-        if (origin != null && intermediates != null) {
-            mainMapviewModel.calculateRouteResponse(
-                origin = origin,
-                destination = destination,
-                intermediates = intermediates
-            )
-        } else {
-//            val origin = if (BuildConfig.DEBUG) {
-//                CITY_GEOPOSITION
-//            } else {
-            val origin = LatLng(
-                requireContext().getFromPrefs("lat", 52.4171724f).toDouble(),
-                requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
-            )
-
-            Log.d("ROUTE_EX", origin.toString() + " " + destination.toString())
-
-            //}
-            mainMapviewModel.calculateRouteResponse(
-                origin = origin,
-                destination = destination
-            )
-        }
-
-    }
-
-    private fun setupMap() {
-        // Перемещаем камеру к нужной точке
-        val targetPoint = Point(52.4171724, 30.9963954) // Gomel
-        val currentPoint = Point(
-            requireContext().getFromPrefs("lat", 52.4171724f).toDouble(),
-            requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
-        )
-        binding.mapView.mapWindow.map.move(
-            CameraPosition(currentPoint, 18.0f, 0.0f, 0.0f),
-            Animation(Animation.Type.SMOOTH, 1f),
-            null
-        )
-
-        // Включаем слои
-        binding.mapView.mapWindow.map.isRotateGesturesEnabled = true
-        binding.mapView.mapWindow.map.isZoomGesturesEnabled = true
-        binding.mapView.mapWindow.map.isScrollGesturesEnabled = true
-        // Добавляем обработчики
-        setupMapListeners()
-    }
-
-    private val mapInputListener = object : InputListener {
-        override fun onMapTap(p0: Map, p1: Point) {}
-
-        override fun onMapLongTap(
-            p0: Map,
-            p1: Point
-        ) {
-        }
-
-    }
-
-    private fun setupMapListeners() {
-        binding.mapView.mapWindow.map.addInputListener(mapInputListener)
-    }
-
-    private val onAttractionTapListener = MapObjectTapListener { mapObject, point ->
-        requireActivity().runOnUiThread {
-            showBottomSheet(mapObject.userData as AttractionModel)
-        }
-        true
-    }
-
-    private fun addCustomPlacemark(points: List<AttractionModel>) {
-        val marker = createBitmapFromVector(R.drawable.map_marker_svg)
-
-        val imageProvider = fromBitmap(marker)
-        points.forEachIndexed { index, point ->
-            val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
-                geometry = Point(point.latitude, point.longitude)
-                setIcon(imageProvider)
-                opacity = 0.6f
-                setText(point.name)
-                userData = point.copy(isCustom = true)
-            }
-            placemark.addTapListener(onAttractionTapListener)
-            customPlaceMarks.add(placemark)
-        }
-    }
-
-    private fun addPlacemark(points: List<OSMPlace>) {
-        placemarksCollection = binding.mapView.mapWindow.map.mapObjects.addCollection()
-
-        val marker = createBitmapFromVector(R.drawable.map_marker_svg)
-
-        val imageProvider = fromBitmap(marker)
-        points.map { it.convertToAttractionModel(it, false) }.forEachIndexed { index, point ->
-            placemarksCollection?.addPlacemark()?.apply {
-                geometry = Point(point.latitude, point.longitude)
-                setIcon(imageProvider)
-                opacity = 0.6f
-                setText(point.name)
-                userData = point
-                addTapListener(onAttractionTapListener)
-            }
-        }
-    }
-
-    private fun showBottomSheet(userData: AttractionModel) {
-        val bottomSheet = AttractionBottomSheet(userData)
-        bottomSheet.show(childFragmentManager, bottomSheet.tag)
-    }
-
-    private fun createBitmapFromVector(art: Int): Bitmap? {
-        val drawable = ContextCompat.getDrawable(requireContext(), art) ?: return null
-        val bitmap = createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-        return bitmap
-    }
-
-    private fun displayRoute(route: Route) {
-        val decodedPath = mainMapviewModel.decodePolyline(route)
-
-        val polyline = Polyline(decodedPath)
-
-        currentRoute = binding.mapView.mapWindow.map.mapObjects.addPolyline(polyline)
-
-        currentRoute?.apply {
-            strokeWidth = 5f
-            setStrokeColor(ContextCompat.getColor(requireContext(), R.color.blue))
-            outlineWidth = 1f
-            outlineColor = ContextCompat.getColor(requireContext(), R.color.black)
-        }
-
-        // Масштабируем карту чтобы показать весь маршрут TODO
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun showRouteInfo(route: Route) {
-        val routeInfo = mainMapviewModel.getRouteInfo(route)
-
-        binding.routeInfoView.visibility = View.VISIBLE
-        binding.routeLengthText.text = "${getString(R.string.route_length)}: ${routeInfo[1]}"
-
-        binding.routeTimeText.text = "${getString(R.string.route_time)}: ${routeInfo[0]}"
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     companion object {
-        fun mainMapFragmentInstance() = MainMapFragment()
         private const val CITY = "Гомель"
-        private val CITY_GEOPOSITION = LatLng(52.4171724, 30.9963954)
     }
 }

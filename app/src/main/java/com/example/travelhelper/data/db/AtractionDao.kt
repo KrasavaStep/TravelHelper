@@ -22,4 +22,7 @@ interface AtractionDao {
 
     @Query("SELECT * FROM ATRACTIONS_TABLE WHERE routeId=:sentRouteId")
     suspend fun getCustomPoints(sentRouteId: Int): List<AttractionEntity>
+
+    @Query("SELECT * FROM ATRACTIONS_TABLE WHERE name LIKE :searchQuery")
+    suspend fun searchAttractions(searchQuery: String): List<AttractionEntity>
 }

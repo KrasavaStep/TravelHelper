@@ -23,14 +23,13 @@ class RoutesManager(
         return try {
             val response = routesApiService.computeRoutes(apiKey = BuildConfig.ROUTES_API_KEY, request = request)
             if (response.isSuccessful) {
-                response.body()?.routes?.firstOrNull()
+                response.body()?.routes?.first()
             } else {
-                Log.e("RoutesManager", "Error calculating route: ${response.code()} ${response.errorBody()?.string()}")
                 null
             }
 
         } catch (e: Exception) {
-            Log.e("RoutesManager", "Exception during route calculation", e)
+            e.printStackTrace()
             null
         }
     }
@@ -50,14 +49,13 @@ class RoutesManager(
         return try {
             val response = routesApiService.computeRoutesWithIntermediates(apiKey = BuildConfig.ROUTES_API_KEY, request = request)
             if (response.isSuccessful) {
-                response.body()?.routes?.firstOrNull()
+                response.body()?.routes?.first()
             } else {
-                Log.e("RoutesManager", "Error calculating custom route: ${response.code()} ${response.errorBody()?.string()}")
                 null
             }
 
         } catch (e: Exception) {
-            Log.e("RoutesManager", "Exception during custom route calculation", e)
+            e.printStackTrace()
             null
         }
     }
