@@ -1,14 +1,12 @@
 package com.example.travelhelper
 
-// region Импорты
-import com.example.travelhelper.ui.SearchAdapter
+import com.example.travelhelper.ui.map.SearchAdapter
 import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.View
 import android.widget.Toast
@@ -23,11 +21,11 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.travelhelper.databinding.ActivityMainBinding
 import com.example.travelhelper.utils.AppBarViewModel
+import com.example.travelhelper.utils.SharedViewModel
 import com.example.travelhelper.utils.Utils.saveToPrefs
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -35,17 +33,15 @@ import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
-// endregion
 
 class MainActivity : AppCompatActivity() {
 
-    // region Существующие переменные
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private val locationPermissionRequestCode = 1000
     private val appBarViewModel: AppBarViewModel by viewModels()
+    private val sharedViewModel: SharedViewModel by viewModels()
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-    // endregion
 
     private val searchViewModel by viewModel<SearchViewModel>(named("searchViewModel"))
     private lateinit var searchView: SearchView
@@ -76,16 +72,11 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        // 1. Вызываем настройку для RecyclerView
         setupSearchRecyclerView()
 
-        // 2. Подписываемся на результаты поиска из ViewModel
         lifecycleScope.launch {
             searchViewModel.searchResults.collect { attractions ->
-                // Передаем новый список в адаптер
                 searchAdapter.submitList(attractions)
-
-                // Управляем видимостью списка: показываем, только если есть текст и результаты
                 if (::searchView.isInitialized && searchView.query.isNotEmpty() && attractions.isNotEmpty()) {
                     searchResultsRecycler.visibility = View.VISIBLE
                 } else {
@@ -99,15 +90,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSearchRecyclerView() {
-        // Находим RecyclerView из разметки app_bar_main.xml по его ID
         searchResultsRecycler = binding.appBarMain.searchResultsRecycler
-
-        // Создаем адаптер. Клик по элементу пока просто показывает Toast.
         searchAdapter = SearchAdapter { attraction ->
-            Toast.makeText(this, "Нажатие на: ${attraction.name}", Toast.LENGTH_SHORT).show()
+            // Вместо Toast отправляем результат в SharedViewModel
+            sharedViewModel.selectAttraction(attraction)
+            searchResultsRecycler.visibility = View.GONE
+            searchView.onActionViewCollapsed()
         }
-
-        // Присваиваем адаптер и LayoutManager нашему RecyclerView
         searchResultsRecycler.adapter = searchAdapter
         searchResultsRecycler.layoutManager = LinearLayoutManager(this)
     }
@@ -115,28 +104,23 @@ class MainActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_activity, menu)
         val searchItem = menu.findItem(R.id.action_search)
-        searchView = searchItem.actionView as SearchView
+        searchView = searchItem?.actionView as SearchView
         searchView.queryHint = "Поиск по достопримечательностям..."
 
-        // Слушатель для управления видимостью списка при закрытии поиска (крестик или кнопка "назад")
         searchItem.setOnActionExpandListener(object : android.view.MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: android.view.MenuItem): Boolean = true
             override fun onMenuItemActionCollapse(item: android.view.MenuItem): Boolean {
-                searchResultsRecycler.visibility = View.GONE // Прячем список
+                searchResultsRecycler.visibility = View.GONE
                 return true
             }
         })
 
-        // Слушатель для обработки ввода текста
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            // Вызывается при нажатии "Enter" на клавиатуре
             override fun onQueryTextSubmit(query: String?): Boolean {
                 searchViewModel.performSearch(query.orEmpty())
-                searchView.clearFocus() // Прячем клавиатуру
+                searchView.clearFocus()
                 return true
             }
-
-            // Вызывается при каждом изменении текста в строке поиска
             override fun onQueryTextChange(newText: String?): Boolean {
                 searchViewModel.performSearch(newText.orEmpty())
                 return true
@@ -147,7 +131,6 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    // region Существующие методы
     private fun updateMenuVisibility(menu: Menu) {
         currentMenuConfig?.shouldShowMenuItems(menu)?.let { shouldShow ->
             val searchItem = menu.findItem(R.id.action_search)
@@ -165,40 +148,19 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
     private fun getCurrentLocation() {
-        Log.d("ROUTE_EX", "getCurrentLoc ")
         if (checkPermissions()) {
             if (isLocationEnabled()) {
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    requestLocationPermissions()
-                    return
-                }
-                try {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     fusedLocationProviderClient.lastLocation.addOnCompleteListener { task ->
                         if (task.isSuccessful && task.result != null) {
                             val location = task.result
-                            Log.d("ROUTE_EX", "loc " + location.latitude.toString() + location.longitude.toString())
                             applicationContext.saveToPrefs("lat", location.latitude.toFloat())
                             applicationContext.saveToPrefs("lon", location.longitude.toFloat())
-                        } else {
-                            Log.w("ROUTE_EX", "Не удалось получить последнее известное местоположение.", task.exception)
-                            Toast.makeText(this, "Не удалось определить ваше местоположение", Toast.LENGTH_SHORT).show()
                         }
                     }
-                } catch (e: SecurityException) {
-                    Log.e("ROUTE_EX", "SecurityException при получении местоположения.", e)
                 }
-            } else {
-                Toast.makeText(this, "Включите GPS", Toast.LENGTH_LONG).show()
-                val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                startActivity(intent)
             }
-        } else {
-            requestLocationPermissions()
         }
     }
 
@@ -211,27 +173,10 @@ class MainActivity : AppCompatActivity() {
     private fun checkPermissions(): Boolean = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     private fun requestLocationPermissions() {
-        Log.d("ROUTE_EX", "requestPermission")
         ActivityCompat.requestPermissions(
             this,
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
             locationPermissionRequestCode
         )
     }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == locationPermissionRequestCode) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                getCurrentLocation()
-            } else {
-                Toast.makeText(this, "Разрешение на геолокацию не было предоставлено", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-    // endregion
 }
