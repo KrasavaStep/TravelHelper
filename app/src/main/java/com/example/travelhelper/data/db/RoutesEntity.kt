@@ -13,5 +13,6 @@ data class RoutesEntity (
     val encodedPolyline: String,
     val type: String,
     val description: String,
+    val routeCategory: String,
     val routeName: String? = null
 )

@@ -75,6 +75,8 @@ android {
 }
 
 dependencies {
+    kotlin
+
     implementation("com.yandex.android:maps.mobile:4.19.0-lite")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -115,11 +117,11 @@ dependencies {
     // For photos
     implementation("com.github.bumptech.glide:glide:5.0.5")
 
-    //koin
-    val koinVersion = "4.1.0"
-    implementation("io.insert-koin:koin-core:${koinVersion}")
-    implementation("io.insert-koin:koin-android:${koinVersion}")
-    testImplementation("io.insert-koin:koin-test:${koinVersion}")
+    ///koin
+    implementation("io.insert-koin:koin-core:3.5.0")
+    implementation("io.insert-koin:koin-android:3.5.0")
+    testImplementation("io.insert-koin:koin-test:3.5.0")
+
 
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.google.maps.android:android-maps-utils:3.19.0")

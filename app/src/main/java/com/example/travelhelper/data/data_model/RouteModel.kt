@@ -14,5 +14,6 @@ data class RouteModel (
     val encodedPolyline: String,
     val type: String,
     val description: String,
-    val routeName: String
+    val routeName: String,
+    val routeCategory: String
 ): Parcelable

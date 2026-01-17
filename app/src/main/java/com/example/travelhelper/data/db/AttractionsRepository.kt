@@ -4,6 +4,7 @@ import com.example.travelhelper.data.data_model.AttractionModel
 import com.example.travelhelper.data.data_model.RouteModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.String
 
 class AttractionsRepository(private val attractionsDao: AtractionDao) {
 
@@ -38,6 +39,7 @@ class AttractionsRepository(private val attractionsDao: AtractionDao) {
             encodedPolyline = route.encodedPolyline,
             type = route.type,
             description = route.description,
+            routeCategory = route.routeCategory,
             routeName = route.routeName ?: ""
         )
     }

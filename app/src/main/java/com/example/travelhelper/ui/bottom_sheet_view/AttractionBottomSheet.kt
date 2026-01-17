@@ -27,7 +27,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.travelhelper.data.data_model.AttractionModel
 import com.example.travelhelper.utils.SharedViewModel
 import com.google.android.material.snackbar.Snackbar
-import org.koin.viewmodel.scope.ViewModelScopeArchetype
+
 
 class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFragment() {
 

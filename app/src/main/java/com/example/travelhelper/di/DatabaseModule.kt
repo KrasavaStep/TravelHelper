@@ -24,7 +24,7 @@ fun provideDatabase(application: Application): AtractionDB {
             "attraction_db"
         ).createFromAsset("databases/attraction_db_asset.db")
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
-            .addMigrations(MIGRATION_1_2)
+            .fallbackToDestructiveMigration()
             .build()
     }
 
