@@ -39,7 +39,7 @@ class AttractionsRepository(private val attractionsDao: AtractionDao) {
             encodedPolyline = route.encodedPolyline,
             type = route.type,
             description = route.description,
-            routeCategory = route.routeCategory,
+            routeCategory = route.routeCategory ?: "",
             routeName = route.routeName ?: ""
         )
     }

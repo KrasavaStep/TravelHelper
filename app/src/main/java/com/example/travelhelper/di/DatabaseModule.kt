@@ -24,7 +24,7 @@ fun provideDatabase(application: Application): AtractionDB {
             "attraction_db"
         ).createFromAsset("databases/attraction_db_asset.db")
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_1_2)
             .build()
     }
 
@@ -33,9 +33,8 @@ fun provideDao(db: AtractionDB): AtractionDao {
     return db.getAttrationDao()
 }
 
-private val MIGRATION_1_2 = object : Migration(1, 2) {
-    override fun migrate(database: SupportSQLiteDatabase) {
-        // Оставьте пустым, если изменения только в Entity классах
-        // или добавьте SQL команды для изменения схемы
+val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+
     }
 }
