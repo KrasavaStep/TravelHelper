@@ -10,9 +10,7 @@
     <com.yandex.mapkit.mapview.MapView
         android:id="@+id/map_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
-
-    </com.yandex.mapkit.mapview.MapView>
+        android:layout_height="match_parent" />
 
     <!-- Строка поиска -->
     <LinearLayout
@@ -75,7 +73,7 @@
             android:orientation="horizontal"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:weightSum="0">
+            android:weightSum="4">
 
             <ImageButton
                 android:id="@+id/btn_home"
@@ -98,16 +96,6 @@
                 app:tint="#666666" />
 
             <ImageButton
-                android:id="@+id/btn_profile"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_weight="1"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Профиль"
-                android:src="@drawable/ic_user"
-                app:tint="#666666" />
-
-            <ImageButton
                 android:id="@+id/btn_settings"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
@@ -115,6 +103,16 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Настройки"
                 android:src="@drawable/ic_settings"
+                app:tint="#666666" />
+
+            <ImageButton
+                android:id="@+id/btn_profile"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Профиль"
+                android:src="@drawable/ic_user"
                 app:tint="#666666" />
 
         </LinearLayout>
@@ -143,10 +141,9 @@
             app:elevation="8dp"
             app:fabCustomSize="70dp"
             app:maxImageSize="27dp"
-            app:srcCompat="@drawable/ic_navigator"
+            app:srcCompat="@drawable/ic_navigating"
             app:tint="@color/white"
             app:shapeAppearanceOverlay="@style/MyFabShape"/>
-
     </RelativeLayout>
 
     <!-- Окно информации о маршруте -->

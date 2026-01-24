@@ -1,6 +1,7 @@
 package com.example.travelhelper.ui.bottom_sheet_view
 
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -9,25 +10,25 @@ import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.net.toUri
+import androidx.lifecycle.ViewModelProvider
 import com.example.travelhelper.R
-import com.example.travelhelper.data.network.overpass_api.OSMPlace
+import com.example.travelhelper.data.data_model.AttractionModel
+import com.example.travelhelper.utils.SharedViewModel
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
-import kotlin.getValue
-import androidx.core.net.toUri
-import androidx.lifecycle.ViewModelProvider
-import com.example.travelhelper.data.data_model.AttractionModel
-import com.example.travelhelper.utils.SharedViewModel
-import com.google.android.material.snackbar.Snackbar
-
 
 class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFragment() {
 
@@ -47,37 +48,59 @@ class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFr
         sharedViewModel = ViewModelProvider(requireParentFragment())[SharedViewModel::class.java]
     }
 
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState)
+        dialog.window?.setDimAmount(0f)
+        return dialog
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val dialog = dialog as? BottomSheetDialog
+        val bottomSheet = dialog?.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
+        bottomSheet?.let {
+            val behavior = BottomSheetBehavior.from(it)
+            val panelHeight = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 140f, resources.displayMetrics
+            ).toInt()
+            it.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            behavior.peekHeight = panelHeight
+            behavior.isHideable = true
+            behavior.skipCollapsed = false 
+            it.post {
+                behavior.state = BottomSheetBehavior.STATE_EXPANDED
+            }
+            it.setBackgroundColor(Color.TRANSPARENT)
+        }
+    }
+
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val closeBtn = view.findViewById<FloatingActionButton>(R.id.close_bottom_sheet_btn)
-        val likeBtn = view.findViewById<FloatingActionButton>(R.id.like_btn)
+        
+        val closeBtn = view.findViewById<ImageButton>(R.id.close_bottom_sheet_btn)
+        val likeBtn = view.findViewById<ImageButton>(R.id.like_btn)
+        val createRouteBtn = view.findViewById<FloatingActionButton>(R.id.create_route_btn)
+        val btnHome = view.findViewById<ImageButton>(R.id.btn_home)
 
-        val workingTimeTextView = view.findViewById<TextView>(R.id.working_time_txt)
-        val priceTextView = view.findViewById<TextView>(R.id.price_txt)
-        val nameTextView = view.findViewById<TextView>(R.id.name_txt)
-        val descriptionTextView = view.findViewById<TextView>(R.id.description_txt)
-        val wikiTextView = view.findViewById<TextView>(R.id.wiki_txt)
-        val createRouteBtn = view.findViewById<Button>(R.id.create_route_btn)
-
-        workingTimeTextView.text = if (!userData.openingHours.isNullOrEmpty()) {
+        view.findViewById<TextView>(R.id.name_txt).text = userData.name
+        view.findViewById<TextView>(R.id.working_time_txt).text = if (!userData.openingHours.isNullOrEmpty()) {
             "${getString(R.string.opening_hours)}: ${userData.openingHours}"
         } else {
             "${getString(R.string.opening_hours)}: ${getString(R.string.opening_hours_placeholder)}"
         }
 
-        priceTextView.text = if (userData.isFee) {
+        view.findViewById<TextView>(R.id.price_txt).text = if (userData.isFee) {
             getString(R.string.attraction_yes_fee)
         } else {
             getString(R.string.attraction_no_fee)
         }
 
-        nameTextView.text = userData.name
+        val descriptionTextView = view.findViewById<TextView>(R.id.description_txt)
         descriptionTextView.text = userData.description
-        if (userData.description.isNullOrEmpty()) {
-            descriptionTextView.visibility = View.GONE
-        }
+        if (userData.description.isNullOrEmpty()) descriptionTextView.visibility = View.GONE
 
+        val wikiTextView = view.findViewById<TextView>(R.id.wiki_txt)
         val siteText = if (!userData.website.isNullOrEmpty()) {
             userData.website
         } else if (!userData.wikipedia.isNullOrEmpty()) {
@@ -93,13 +116,16 @@ class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFr
             wikiTextView.movementMethod = LinkMovementMethod.getInstance()
         }
 
-        closeBtn.setOnClickListener {
+        closeBtn.setOnClickListener { dismiss() }
+
+        // Кнопка ДОМОЙ закрывает карточку и возвращает на карту
+        btnHome?.setOnClickListener {
             dismiss()
         }
 
         likeBtn.setOnClickListener {
             viewModel.addLikedAttractionToDb(userData)
-            Toast.makeText(context, "Место добавлено в понравившиеся", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Место добавлено в понравившиеся", Toast.LENGTH_SHORT).show()
         }
 
         createRouteBtn.setOnClickListener {
@@ -113,39 +139,22 @@ class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFr
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        dismiss()
-    }
-
-    override fun getTheme(): Int {
-        return R.style.AppBottomSheetDialogTheme
-    }
+    override fun getTheme(): Int = R.style.AppBottomSheetDialogTheme
 
     private fun createSpannableString(link: String): SpannableString {
         val resString = "${getString(R.string.get_more_info)}: $link"
         val spannableString = SpannableString(resString)
         val clickableSpan = object : ClickableSpan() {
             override fun onClick(widget: View) {
-                // Обработка клика
-                val intent = Intent(Intent.ACTION_VIEW, link.toUri())
-                startActivity(intent)
+                startActivity(Intent(Intent.ACTION_VIEW, link.toUri()))
             }
-
             override fun updateDrawState(ds: TextPaint) {
                 super.updateDrawState(ds)
                 ds.color = Color.BLUE
                 ds.isUnderlineText = true
             }
         }
-
-        spannableString.setSpan(
-            clickableSpan,
-            0, // начальная позиция
-            resString.length, // конечная позиция
-            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
-
+        spannableString.setSpan(clickableSpan, 0, resString.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         return spannableString
     }
 }

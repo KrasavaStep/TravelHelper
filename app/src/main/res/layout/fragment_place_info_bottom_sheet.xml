@@ -1,118 +1,216 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#D1D9FF"
     tools:context=".ui.bottom_sheet_view.AttractionBottomSheet">
 
+    <!-- Изображение достопримечательности -->
     <ImageView
         android:id="@+id/place_img_view"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginStart="0dp"
-        android:contentDescription="place_img"
+        android:layout_height="350dp"
+        android:scaleType="centerCrop"
         android:src="@drawable/city"
-        />
+        android:contentDescription="place_img" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <!-- Кнопка закрытия (стрелочка назад) -->
+    <ImageButton
         android:id="@+id/close_bottom_sheet_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="15dp"
-        android:layout_marginEnd="15dp"
-        android:src="@drawable/close_svg"
-        />
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/close_svg_18"
+        app:tint="@color/white" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/like_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/place_img_view"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="15dp"
-        android:layout_marginBottom="15dp"
-        android:contentDescription="add_to_fav"
-        android:src="@drawable/heart_inactive"
-        />
-
-    <ScrollView
-        android:id="@+id/attraction_scroll_view"
+    <!-- Основной контент -->
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/place_img_view"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentStart="true"
-        >
+        android:layout_height="match_parent"
+        android:layout_below="@id/place_img_view"
+        android:layout_marginTop="-30dp"
+        android:background="@drawable/bg_drawer_unified"
+        android:paddingBottom="140dp">
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_details_card"
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:elevation="4dp">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:id="@+id/name_txt"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentStart="true"
+                            android:layout_toStartOf="@+id/like_btn"
+                            android:text="Название"
+                            android:textColor="@color/white"
+                            android:textSize="24sp"
+                            android:textStyle="bold" />
+
+                        <ImageButton
+                            android:id="@+id/like_btn"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_alignParentEnd="true"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/heart_inactive"
+                            app:tint="@color/white" />
+                    </RelativeLayout>
+
+                    <TextView
+                        android:id="@+id/working_time_txt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Время работы"
+                        android:textColor="#F0F0F0"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/price_txt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Цена"
+                        android:textColor="#F0F0F0"
+                        android:textSize="16sp" />
+
+                    <com.example.travelhelper.utils.ExpandableTextView
+                        android:id="@+id/description_txt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Описание..."
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
+                        android:lineSpacingExtra="4dp" />
+
+                    <TextView
+                        android:id="@+id/wiki_txt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Узнать больше..."
+                        android:textColor="#D1D9FF"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+    </RelativeLayout>
+
+    <!-- НИЖНЯЯ ПАНЕЛЬ -->
+    <RelativeLayout
+        android:id="@+id/bottom_nav_panel"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:layout_alignParentBottom="true">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/bg_bottom_panel" />
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            >
+            android:layout_height="64dp"
+            android:layout_alignParentBottom="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:weightSum="4">
 
-            <TextView
-                android:id="@+id/name_txt"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Воинам"
-                android:padding="8dp"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                />
+            <ImageButton
+                android:id="@+id/btn_home"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_home"
+                android:contentDescription="Домой"
+                app:tint="#666666" />
 
-            <TextView
-                android:id="@+id/working_time_txt"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/opening_hours"
-                android:padding="8dp"
-                />
+            <ImageButton
+                android:id="@+id/btn_world"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_world"
+                android:contentDescription="Мир"
+                app:tint="#4A5FB4" />
 
-            <TextView
-                android:id="@+id/price_txt"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/attraction_no_fee"
-                android:padding="8dp"
-                />
+            <ImageButton
+                android:id="@+id/btn_settings"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_settings"
+                android:contentDescription="Настройки"
+                app:tint="#666666" />
 
-            <com.example.travelhelper.utils.ExpandableTextView
-                android:id="@+id/description_txt"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/lorem_ipsum"
-                android:padding="8dp"
-                />
-
-            <TextView
-                android:id="@+id/wiki_txt"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Сайт: Wiki/com"
-                android:autoLink="web"
-                android:linksClickable="true"
-                android:padding="8dp"
-                />
-
+            <ImageButton
+                android:id="@+id/btn_profile"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_user"
+                android:contentDescription="Профиль"
+                app:tint="#666666" />
         </LinearLayout>
 
-    </ScrollView>
+        <!-- Синяя полоска -->
+        <View
+            android:layout_width="45dp"
+            android:layout_height="2.5dp"
+            android:background="#6A96F2"
+            android:layout_toStartOf="@id/create_route_btn"
+            android:layout_alignBottom="@id/create_route_btn"
+            android:layout_marginBottom="36dp"
+            android:layout_marginEnd="8dp" />
 
-    <Button
-        android:id="@+id/create_route_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/attraction_scroll_view"
-        android:layout_marginTop="40dp"
-        android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="16dp"
-        android:text="Построить маршрут" />
+        <!-- Кнопка построения маршрута -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/create_route_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="60dp"
+            android:contentDescription="Построить маршрут"
+            app:backgroundTint="#6A96F2"
+            app:elevation="8dp"
+            app:fabCustomSize="75dp"
+            app:maxImageSize="36dp"
+            app:srcCompat="@drawable/ic_navigator"
+            app:tint="@color/white"
+            app:shapeAppearanceOverlay="@style/MyFabShape"/>
 
+    </RelativeLayout>
 
 </RelativeLayout>

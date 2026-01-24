@@ -2,6 +2,7 @@ package com.example.travelhelper.ui.map
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -46,7 +47,6 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
 import com.example.travelhelper.utils.BorderData
-import android.content.Context
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val mainMapviewModel by viewModel<MainMapViewModel>(named("mainMapViewModel"))
@@ -73,7 +73,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         thisView = view
-        
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
         
         setupMap()
@@ -114,12 +113,29 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     private fun setupClickListeners() {
-        // Перемещение к текущему местоположению
+        // Кнопка ДОМОЙ - сброс состояния карты
+        binding.btnHome.setOnClickListener {
+            binding.searchResultsRecycler.visibility = View.GONE
+            binding.routeInfoView.visibility = View.GONE
+            binding.mapSearchView.setQuery("", false)
+            binding.mapSearchView.clearFocus()
+            hideKeyboard()
+            removeRoute()
+            
+            // Возврат камеры к начальной точке (центр Гомеля или текущая позиция)
+            val lat = requireContext().getFromPrefs("lat", 52.4171724f).toDouble()
+            val lon = requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
+            binding.mapView.mapWindow.map.move(
+                CameraPosition(Point(lat, lon), 15.0f, 0.0f, 0.0f),
+                Animation(Animation.Type.SMOOTH, 1f),
+                null
+            )
+        }
+
         binding.fabLocationCustom.setOnClickListener {
             val lat = requireContext().getFromPrefs("lat", 52.4171724f).toDouble()
             val lon = requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
             val currentPoint = Point(lat, lon)
-            
             binding.mapView.mapWindow.map.move(
                 CameraPosition(currentPoint, 18.0f, 0.0f, 0.0f),
                 Animation(Animation.Type.SMOOTH, 1.5f),
@@ -346,8 +362,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     private fun drawDetailedBelarusBorder(border: BorderData) {
-        val outerRing = LinearRing(border.points)
-        val polygon = Polygon(outerRing, emptyList())
+        val polygon = Polygon(LinearRing(border.points), emptyList())
         binding.mapView.mapWindow.map.mapObjects.addPolygon(polygon).apply {
             strokeColor = resources.getColor(R.color.border_fill_color)
             strokeWidth = 4.0f
