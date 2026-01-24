@@ -2,44 +2,41 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/map_fragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.map.MainMapFragment"
-    android:id="@+id/map_fragment"
-    >
+    tools:context=".ui.map.MainMapFragment">
 
     <com.yandex.mapkit.mapview.MapView
         android:id="@+id/map_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent" />
 
-    </com.yandex.mapkit.mapview.MapView>
-
-    <!-- Новая кастомная строка поиска -->
+    <!-- Строка поиска -->
     <LinearLayout
         android:id="@+id/search_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="16dp"
         android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp">
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="vertical">
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="48dp"
+            app:cardBackgroundColor="#D1D9FF"
             app:cardCornerRadius="24dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="#D1D9FF">
+            app:cardElevation="4dp">
 
             <androidx.appcompat.widget.SearchView
                 android:id="@+id/map_search_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 app:iconifiedByDefault="false"
+                app:queryBackground="@android:color/transparent"
                 app:queryHint="Поиск мест..."
-                app:searchIcon="@android:drawable/ic_menu_search"
-                app:queryBackground="@android:color/transparent" />
+                app:searchIcon="@android:drawable/ic_menu_search" />
 
         </androidx.cardview.widget.CardView>
 
@@ -55,151 +52,155 @@
 
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/loading_view"
+    <!-- НИЖНЯЯ ПАНЕЛЬ С ГРАДИЕНТОМ -->
+    <RelativeLayout
+        android:id="@+id/bottom_nav_panel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:visibility="gone"
-        android:padding="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:showDividers="beginning"
-        android:background="@drawable/loading_shape"
-        >
-        <ProgressBar
-            android:layout_width="64dp"
-            android:layout_height="64dp" />
+        android:layout_height="172dp"
+        android:layout_alignParentBottom="true">
 
-        <TextView
+        <View
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="Идет загрузка данных"
-            android:textSize="24sp"
-            android:gravity="center"
-            />
-    </LinearLayout>
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/bg_bottom_panel" />
 
-    <LinearLayout
-        android:id="@+id/reload_attractions"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:background="@color/white"
-        android:visibility="gone"
-        >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_alignParentBottom="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:weightSum="0">
 
-        <ImageView
-            android:id="@+id/reload_img"
-            android:layout_width="128dp"
-            android:layout_height="128dp"
-            android:src="@drawable/outline_autorenew"
-            android:layout_marginBottom="24dp"
-            />
+            <ImageButton
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Главная"
+                android:src="@drawable/ic_home"
+                app:tint="#4A5FB4" />
 
-        <TextView
-            android:id="@+id/error_msg"
+              <ImageButton
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Мир"
+                android:src="@drawable/ic_world"
+                app:tint="#666666" />
+
+            <ImageButton
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Настройки"
+                android:src="@drawable/ic_settings"
+                app:tint="#666666" />
+
+            <ImageButton
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Профиль"
+                android:src="@drawable/ic_user"
+                app:tint="#666666" />
+
+        </LinearLayout>
+
+        <!-- СИНЯЯ ПОЛОСКА СЛЕВА (как на фото) -->
+        <View
+            android:id="@+id/blue_line_indicator"
+            android:layout_width="45dp"
+            android:layout_height="2.5dp"
+            android:background="#6A96F2"
+            android:layout_toStartOf="@id/fab_location_custom"
+            android:layout_alignBottom="@id/fab_location_custom"
+            android:layout_marginBottom="36dp"
+            android:layout_marginEnd="8dp" />
+
+        <!-- Центральная кнопка (теперь с принудительной формой круга) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_location_custom"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="24sp"
-            android:textAlignment="center"
-            android:text="не найдено достопримечательностей в городе Гомель"
-            android:layout_margin="16dp"
-            />
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="75dp"
+            android:contentDescription="Геолокация"
+            app:backgroundTint="#6A96F2"
+            app:elevation="8dp"
+            app:fabCustomSize="70dp"
+            app:maxImageSize="30dp"
+            app:srcCompat="@drawable/ic_navigator"
+            app:tint="@color/white"
+            app:shapeAppearanceOverlay="@style/MyFabShape"/>
 
-    </LinearLayout>
+    </RelativeLayout>
 
+    <!-- Окно информации о маршруте -->
     <com.google.android.material.card.MaterialCardView
-        android:visibility="gone"
         android:id="@+id/route_info_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentBottom="true"
+        android:layout_above="@id/bottom_nav_panel"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
-        android:layout_toStartOf="@+id/change_map_layout"
+        android:visibility="gone"
         app:cardCornerRadius="12dp"
-        app:cardElevation="8dp"
-        app:strokeColor="#E0E0E0"
-        app:strokeWidth="1dp">
+        app:cardElevation="8dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:padding="8dp">
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/route_time_text"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingStart="8dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="Время в пути: 22 ч. 16 м. 45 с."
-                    tools:ignore="RtlSymmetry" />
-
-                <TextView
-                    android:id="@+id/route_length_text"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingStart="8dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="Расстояние: 450 м."
-                    tools:ignore="RtlSymmetry" />
-
+                <TextView android:id="@+id/route_time_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Время..." android:textColor="@color/black" />
+                <TextView android:id="@+id/route_length_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Расстояние..." android:textColor="@color/black" />
             </LinearLayout>
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <ImageButton
-                android:id="@+id/close_route_info"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:padding="8dp"
-                android:background="@android:color/transparent"
-                android:src="@drawable/close_svg_18"
-                />
-
+            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+            <ImageButton android:id="@+id/close_route_info" android:layout_width="32dp" android:layout_height="32dp" android:background="@android:color/transparent" android:src="@drawable/close_svg_18" android:contentDescription="Закрыть" />
         </LinearLayout>
-
     </com.google.android.material.card.MaterialCardView>
 
-
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/show_location"
-        android:layout_width="wrap_content"
+    <!-- Блок загрузки -->
+    <LinearLayout
+        android:id="@+id/loading_view"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/change_map_layout"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="@dimen/fab_margin"
-        android:layout_marginBottom="16dp"
-        app:srcCompat="@android:drawable/ic_menu_compass"
-        android:visibility="gone"
-        />
+        android:layout_centerInParent="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/loading_shape"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:visibility="gone">
+        <ProgressBar android:layout_width="64dp" android:layout_height="64dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="center" android:gravity="center" android:text="Загрузка..." android:textSize="20sp" />
+    </LinearLayout>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/change_map_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="@dimen/fab_margin"
-        android:layout_marginBottom="16dp"
-        android:visibility="gone"
-        app:srcCompat="@android:drawable/ic_dialog_map" />
+    <!-- Блок ошибки -->
+    <LinearLayout
+        android:id="@+id/reload_attractions"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+        <ImageView android:id="@+id/reload_img" android:layout_width="128dp" android:layout_height="128dp" android:layout_marginBottom="24dp" android:src="@drawable/outline_autorenew" android:contentDescription="Обновить" />
+        <TextView android:id="@+id/error_msg" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_margin="16dp" android:textAlignment="center" android:textSize="20sp" />
+    </LinearLayout>
 
 </RelativeLayout>

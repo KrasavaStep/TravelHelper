@@ -24,4 +24,16 @@
         <item name="backgroundTint">@color/white</item>
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.LargeComponent</item>
     </style>
+
+    <style name="RoundedButton">
+        <!-- Указываем тип скругления (rounded - закругленные, cut - срезанные) -->
+        <item name="cornerFamily">rounded</item>
+        <!-- Укажите здесь нужный радиус скругления, например 16dp или 20% -->
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="MyFabShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>
