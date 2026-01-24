@@ -2,15 +2,17 @@ package com.example.travelhelper.ui.map
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
+import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
@@ -55,21 +57,22 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private var _binding: FragmentMainMapBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var searchAdapter: SearchAdapter
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.fragment_main_map, container, false)
+        _binding = FragmentMainMapBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        _binding = FragmentMainMapBinding.bind(view)
         thisView = view
-        
-        // ВАЖНО: используем ту же область видимости, что и в BottomSheet
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
         
+        setupSearch()
         setupMap()
         setupObservers(view)
 
@@ -85,20 +88,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
         setupRouteObservers()
 
-        // Поиск
-        val activitySharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
-        activitySharedViewModel.selectedAttraction.observe(viewLifecycleOwner) { attraction ->
-            if (attraction != null) {
-                showBottomSheet(attraction)
-                binding.mapView.mapWindow.map.move(
-                    CameraPosition(Point(attraction.latitude, attraction.longitude), 16.0f, 0.0f, 0.0f),
-                    Animation(Animation.Type.SMOOTH, 1f),
-                    null
-                )
-            }
-        }
-
-        // Построение маршрута (слушаем локальный SharedViewModel для BottomSheet)
+        // Слушаем выбор точки для маршрута
         sharedViewModel.dialogResult.observe(viewLifecycleOwner) { it ->
             binding.routeInfoView.visibility = View.GONE
             removeRoute()
@@ -118,7 +108,54 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         }
     }
 
-    override fun shouldShowMenuItems(menu: Menu): Boolean = true
+    private fun setupSearch() {
+        searchAdapter = SearchAdapter { attraction ->
+            showBottomSheet(attraction)
+            binding.searchResultsRecycler.visibility = View.GONE
+            binding.mapSearchView.setQuery("", false)
+            binding.mapSearchView.clearFocus()
+            hideKeyboard()
+
+            val point = Point(attraction.latitude, attraction.longitude)
+            binding.mapView.mapWindow.map.move(
+                CameraPosition(point, 16.0f, 0.0f, 0.0f),
+                Animation(Animation.Type.SMOOTH, 1f),
+                null
+            )
+        }
+        binding.searchResultsRecycler.adapter = searchAdapter
+
+        binding.mapSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                query?.let { mainMapviewModel.searchAttractions(it) }
+                return true
+            }
+            override fun onQueryTextChange(newText: String?): Boolean {
+                newText?.let { mainMapviewModel.searchAttractions(it) }
+                return true
+            }
+        })
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainMapviewModel.searchState.collect { results ->
+                    if (results.isNotEmpty()) {
+                        searchAdapter.submitList(results)
+                        binding.searchResultsRecycler.visibility = View.VISIBLE
+                    } else {
+                        binding.searchResultsRecycler.visibility = View.GONE
+                    }
+                }
+            }
+        }
+    }
+
+    private fun hideKeyboard() {
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(view?.windowToken, 0)
+    }
+
+    override fun shouldShowMenuItems(menu: Menu): Boolean = false
 
     private fun setupMap() {
         val currentPoint = Point(
@@ -146,7 +183,6 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                             binding.loadingView.visibility = View.GONE
                             addPlacemark(uiState.attractions)
                             setCurrentLocationPoint()
-                            if (args.route != null) placemarksCollection?.isVisible = false
                         }
                         is MainMapViewModel.AttractionsUiState.Loading -> {
                             binding.loadingView.visibility = if (uiState.isLoading) View.VISIBLE else View.GONE
@@ -172,7 +208,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                             binding.loadingView.visibility = View.GONE
                         }
                         is MainMapViewModel.RouteUiState.Error -> {
-                            Snackbar.make(thisView, state.exception.message.toString(), Snackbar.LENGTH_LONG).show()
+                            Snackbar.make(thisView, state.exception.message ?: "Ошибка", Snackbar.LENGTH_LONG).show()
                             binding.loadingView.visibility = View.GONE
                         }
                         is MainMapViewModel.RouteUiState.Loading -> {
@@ -276,15 +312,14 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                 setIcon(imageProvider)
                 setText(point.name)
                 userData = point.copy(isCustom = true)
+                customPlaceMarks.add(this)
             }
             placemark.addTapListener(onAttractionTapListener)
-            customPlaceMarks.add(placemark)
         }
     }
 
     private fun drawDetailedBelarusBorder(border: BorderData) {
-        val outerRing = LinearRing(border.points)
-        val polygon = Polygon(outerRing, emptyList())
+        val polygon = Polygon(LinearRing(border.points), emptyList())
         binding.mapView.mapWindow.map.mapObjects.addPolygon(polygon).apply {
             strokeColor = resources.getColor(R.color.border_fill_color)
             strokeWidth = 4.0f
@@ -303,8 +338,8 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
             setIcon(imageProvider)
             opacity = 0.6f
             setText(getString(R.string.current_location))
+            customPlaceMarks.add(this)
         }
-        customPlaceMarks.add(placemark)
     }
 
     private fun createBitmapFromVector(art: Int): Bitmap? {

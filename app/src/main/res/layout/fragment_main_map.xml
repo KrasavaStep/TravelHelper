@@ -15,17 +15,45 @@
 
     </com.yandex.mapkit.mapview.MapView>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/search_results_recycler"
+    <!-- Новая кастомная строка поиска -->
+    <LinearLayout
+        android:id="@+id/search_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="16dp"
         android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="8dp"
-        android:background="@android:color/white"
-        android:elevation="10dp"
-        android:visibility="gone"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+        android:layout_marginEnd="16dp">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#D1D9FF">
+
+            <androidx.appcompat.widget.SearchView
+                android:id="@+id/map_search_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:iconifiedByDefault="false"
+                app:queryHint="Поиск мест..."
+                app:searchIcon="@android:drawable/ic_menu_search"
+                app:queryBackground="@android:color/transparent" />
+
+        </androidx.cardview.widget.CardView>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/search_results_recycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@android:color/white"
+            android:elevation="8dp"
+            android:visibility="gone"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/loading_view"
