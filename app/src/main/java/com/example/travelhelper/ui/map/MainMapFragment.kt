@@ -2,11 +2,11 @@ package com.example.travelhelper.ui.map
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
@@ -15,6 +15,8 @@ import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -44,6 +46,7 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.qualifier.named
 import com.example.travelhelper.utils.BorderData
+import android.content.Context
 
 class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private val mainMapviewModel by viewModel<MainMapViewModel>(named("mainMapViewModel"))
@@ -70,11 +73,12 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         thisView = view
+        
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
         
-        setupSearch()
         setupMap()
         setupObservers(view)
+        setupClickListeners()
 
         mainMapviewModel.getBelarusBorder()
         mainMapviewModel.borderLiveData.observe(viewLifecycleOwner) { borderList ->
@@ -88,11 +92,44 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
         setupRouteObservers()
 
-        // Слушаем выбор точки для маршрута
+        val activitySharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
+        activitySharedViewModel.selectedAttraction.observe(viewLifecycleOwner) { attraction ->
+            if (attraction != null) {
+                showBottomSheet(attraction)
+                binding.mapView.mapWindow.map.move(
+                    CameraPosition(Point(attraction.latitude, attraction.longitude), 16.0f, 0.0f, 0.0f),
+                    Animation(Animation.Type.SMOOTH, 1f),
+                    null
+                )
+            }
+        }
+
         sharedViewModel.dialogResult.observe(viewLifecycleOwner) { it ->
             binding.routeInfoView.visibility = View.GONE
             removeRoute()
             calculateRoute(LatLng(it[1], it[0]))
+        }
+
+        setupSearch()
+    }
+
+    private fun setupClickListeners() {
+        // Перемещение к текущему местоположению
+        binding.fabLocationCustom.setOnClickListener {
+            val lat = requireContext().getFromPrefs("lat", 52.4171724f).toDouble()
+            val lon = requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
+            val currentPoint = Point(lat, lon)
+            
+            binding.mapView.mapWindow.map.move(
+                CameraPosition(currentPoint, 18.0f, 0.0f, 0.0f),
+                Animation(Animation.Type.SMOOTH, 1.5f),
+                null
+            )
+        }
+
+        binding.btnProfile.setOnClickListener {
+            val drawer = requireActivity().findViewById<DrawerLayout>(R.id.drawer_layout)
+            drawer?.openDrawer(GravityCompat.START)
         }
 
         binding.reloadImg.setOnClickListener {
@@ -201,19 +238,9 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 mainMapviewModel.routeState.collect { state ->
-                    when (state) {
-                        is MainMapViewModel.RouteUiState.Success -> {
-                            displayRoute(state.route)
-                            showRouteInfo(state.route)
-                            binding.loadingView.visibility = View.GONE
-                        }
-                        is MainMapViewModel.RouteUiState.Error -> {
-                            Snackbar.make(thisView, state.exception.message ?: "Ошибка", Snackbar.LENGTH_LONG).show()
-                            binding.loadingView.visibility = View.GONE
-                        }
-                        is MainMapViewModel.RouteUiState.Loading -> {
-                            binding.loadingView.visibility = if (state.isLoading) View.VISIBLE else View.GONE
-                        }
+                    if (state is MainMapViewModel.RouteUiState.Success) {
+                        displayRoute(state.route)
+                        showRouteInfo(state.route)
                     }
                 }
             }
@@ -319,7 +346,8 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     private fun drawDetailedBelarusBorder(border: BorderData) {
-        val polygon = Polygon(LinearRing(border.points), emptyList())
+        val outerRing = LinearRing(border.points)
+        val polygon = Polygon(outerRing, emptyList())
         binding.mapView.mapWindow.map.mapObjects.addPolygon(polygon).apply {
             strokeColor = resources.getColor(R.color.border_fill_color)
             strokeWidth = 4.0f

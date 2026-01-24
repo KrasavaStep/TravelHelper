@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Основной фиолетовый фон -->
+    <item>
+        <color android:color="#D1D9FF" />
+    </item>
+    <!-- Цветы снизу (прижаты к левому краю) -->
+    <item>
+        <bitmap
+            android:src="@drawable/flowers"
+            android:gravity="bottom|start"
+            android:alpha="0.6" />
+    </item>
+</layer-list>
