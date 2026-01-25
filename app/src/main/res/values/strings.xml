@@ -12,9 +12,9 @@
     <string name="action_search">Search</string>
 
     <string name="menu_about_app">About</string>
-    <string name="menu_liked">Liked places</string>
+    <string name="menu_liked">Любимые места</string>
     <string name="menu_settings">Settings</string>
-    <string name="menu_main_map">Map</string>
+    <string name="menu_main_map">Карта</string>
 
     <string name="opening_hours"><b>Часы работы</b></string>
     <string name="opening_hours_placeholder">Круглосуточно</string>

@@ -1,13 +1,10 @@
 package com.example.travelhelper.ui.map
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
@@ -23,6 +20,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.example.travelhelper.MainActivity
 import com.example.travelhelper.R
@@ -37,6 +35,7 @@ import com.example.travelhelper.utils.Utils.getFromPrefs
 import com.google.android.material.snackbar.Snackbar
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
+import com.yandex.mapkit.geometry.Geometry
 import com.yandex.mapkit.geometry.LinearRing
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polygon
@@ -76,7 +75,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
         
         setupMap()
-        setupObservers(view)
+        setupObservers()
         setupClickListeners()
 
         mainMapviewModel.getBelarusBorder()
@@ -112,24 +111,27 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         setupSearch()
     }
 
+    fun resetMapState() {
+        if (_binding == null) return
+        binding.searchResultsRecycler.visibility = View.GONE
+        binding.routeInfoView.visibility = View.GONE
+        binding.mapSearchView.setQuery("", false)
+        binding.mapSearchView.clearFocus()
+        hideKeyboard()
+        removeRoute()
+        
+        val lat = requireContext().getFromPrefs("lat", 52.4171724f).toDouble()
+        val lon = requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
+        binding.mapView.mapWindow.map.move(
+            CameraPosition(Point(lat, lon), 15.0f, 0.0f, 0.0f),
+            Animation(Animation.Type.SMOOTH, 1f),
+            null
+        )
+    }
+
     private fun setupClickListeners() {
-        // Кнопка ДОМОЙ - сброс состояния карты
         binding.btnHome.setOnClickListener {
-            binding.searchResultsRecycler.visibility = View.GONE
-            binding.routeInfoView.visibility = View.GONE
-            binding.mapSearchView.setQuery("", false)
-            binding.mapSearchView.clearFocus()
-            hideKeyboard()
-            removeRoute()
-            
-            // Возврат камеры к начальной точке (центр Гомеля или текущая позиция)
-            val lat = requireContext().getFromPrefs("lat", 52.4171724f).toDouble()
-            val lon = requireContext().getFromPrefs("lon", 30.9963954f).toDouble()
-            binding.mapView.mapWindow.map.move(
-                CameraPosition(Point(lat, lon), 15.0f, 0.0f, 0.0f),
-                Animation(Animation.Type.SMOOTH, 1f),
-                null
-            )
+            resetMapState()
         }
 
         binding.fabLocationCustom.setOnClickListener {
@@ -143,6 +145,8 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
             )
         }
 
+        binding.btnWorld.setOnClickListener { findNavController().navigate(R.id.nav_liked_places) }
+        binding.btnSettings.setOnClickListener { findNavController().navigate(R.id.nav_settings) }
         binding.btnProfile.setOnClickListener {
             val drawer = requireActivity().findViewById<DrawerLayout>(R.id.drawer_layout)
             drawer?.openDrawer(GravityCompat.START)
@@ -225,7 +229,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         binding.mapView.mapWindow.map.isScrollGesturesEnabled = true
     }
 
-    private fun setupObservers(view: View) {
+    private fun setupObservers() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 mainMapviewModel.loadAttractions(CITY)
@@ -236,6 +240,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                             binding.loadingView.visibility = View.GONE
                             addPlacemark(uiState.attractions)
                             setCurrentLocationPoint()
+                            if (args.route != null) placemarksCollection?.isVisible = false
                         }
                         is MainMapViewModel.AttractionsUiState.Loading -> {
                             binding.loadingView.visibility = if (uiState.isLoading) View.VISIBLE else View.GONE
@@ -273,12 +278,22 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
     private fun displayRoute(route: Route) {
         val decodedPath = mainMapviewModel.decodePolyline(route)
-        currentRoute = binding.mapView.mapWindow.map.mapObjects.addPolyline(Polyline(decodedPath))
+        val polyline = Polyline(decodedPath)
+        currentRoute = binding.mapView.mapWindow.map.mapObjects.addPolyline(polyline)
         currentRoute?.apply {
             strokeWidth = 5f
             setStrokeColor(ContextCompat.getColor(requireContext(), R.color.blue))
             outlineWidth = 1f
             outlineColor = ContextCompat.getColor(requireContext(), R.color.black)
+        }
+
+        if (decodedPath.isNotEmpty()) {
+            val cameraPosition = binding.mapView.mapWindow.map.cameraPosition(Geometry.fromPolyline(polyline))
+            binding.mapView.mapWindow.map.move(
+                CameraPosition(cameraPosition.target, cameraPosition.zoom - 0.8f, cameraPosition.azimuth, cameraPosition.tilt),
+                Animation(Animation.Type.SMOOTH, 1.5f),
+                null
+            )
         }
     }
 
@@ -320,6 +335,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     fun removeRoute() {
         currentRoute?.let { if (it.isValid) binding.mapView.mapWindow.map.mapObjects.remove(it) }
         currentRoute = null
+        placemarksCollection?.isVisible = true
     }
 
     fun removeCustomPoints() {
@@ -334,6 +350,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
                 mainMapviewModel.customPointState.collect { state ->
                     if (state is MainMapViewModel.CustomPointUiState.Success) {
                         binding.mapView.mapWindow.map.mapObjects.clear()
+                        placemarksCollection?.isVisible = false
                         addCustomPlacemark(state.attractions)
                         calculateRoute(
                             LatLng(state.attractions.last().latitude, state.attractions.last().longitude),
@@ -364,9 +381,9 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     private fun drawDetailedBelarusBorder(border: BorderData) {
         val polygon = Polygon(LinearRing(border.points), emptyList())
         binding.mapView.mapWindow.map.mapObjects.addPolygon(polygon).apply {
-            strokeColor = resources.getColor(R.color.border_fill_color)
+            strokeColor = ContextCompat.getColor(requireContext(), R.color.border_fill_color)
             strokeWidth = 4.0f
-            fillColor = resources.getColor(R.color.transparent)
+            fillColor = ContextCompat.getColor(requireContext(), R.color.transparent)
         }
     }
 
@@ -376,7 +393,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
         val marker = createBitmapFromVector(R.drawable.current_location)
         val imageProvider = fromBitmap(marker)
 
-        val placemark = binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
+        binding.mapView.mapWindow.map.mapObjects.addPlacemark().apply {
             geometry = Point(lat, lon)
             setIcon(imageProvider)
             opacity = 0.6f

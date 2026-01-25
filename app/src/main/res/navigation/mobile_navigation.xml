@@ -10,13 +10,10 @@
         android:name="com.example.travelhelper.ui.map.MainMapFragment"
         android:label="@string/menu_main_map"
         tools:layout="@layout/fragment_main_map">
-
-
         <argument
             android:name="id"
             app:argType="integer"
-            android:defaultValue="1"
-            />
+            android:defaultValue="1" />
         <argument
             android:name="route"
             app:argType="com.example.travelhelper.data.data_model.RouteModel"
@@ -37,6 +34,16 @@
         tools:layout="@layout/fragment_liked_places">
         <action
             android:id="@+id/action_nav_liked_places_to_nav_main_map"
+            app:destination="@id/nav_main_map" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_routes"
+        android:name="com.example.travelhelper.ui.liked_places.RoutesFragment"
+        android:label="Маршруты"
+        tools:layout="@layout/fragment_routes">
+        <action
+            android:id="@+id/action_nav_routes_to_nav_main_map"
             app:destination="@id/nav_main_map" />
     </fragment>
 

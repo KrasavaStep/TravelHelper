@@ -10,19 +10,19 @@
             android:title="@string/menu_main_map" />
         <item
             android:id="@+id/nav_liked_places"
-            android:icon="@drawable/ic_heart"
+            android:icon="@drawable/heart_active"
             android:title="@string/menu_liked" />
         <item
-            android:id="@+id/nav_settings"
-            android:icon="@drawable/ic_menu_slideshow"
-            android:title="@string/menu_settings"
-            android:visible="false"
-            />
-        <item
-            android:id="@+id/nav_about_app"
-            android:icon="@drawable/ic_menu_slideshow"
-            android:title="@string/menu_about_app"
-            android:visible="false"
-            />
+            android:id="@+id/nav_routes"
+            android:icon="@drawable/ic_navigator"
+            android:title="Маршруты" />
+<!--        <item-->
+<!--            android:id="@+id/nav_settings"-->
+<!--            android:icon="@drawable/ic_settings"-->
+<!--            android:title="@string/menu_settings" />-->
+<!--        <item-->
+<!--            android:id="@+id/nav_about_app"-->
+<!--            android:icon="@drawable/ic_menu_compass"-->
+<!--            android:title="@string/menu_about_app" />-->
     </group>
 </menu>

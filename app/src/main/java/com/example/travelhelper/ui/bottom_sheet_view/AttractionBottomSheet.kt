@@ -118,14 +118,13 @@ class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFr
 
         closeBtn.setOnClickListener { dismiss() }
 
-        // Кнопка ДОМОЙ закрывает карточку и возвращает на карту
         btnHome?.setOnClickListener {
             dismiss()
         }
 
         likeBtn.setOnClickListener {
             viewModel.addLikedAttractionToDb(userData)
-            Toast.makeText(context, "Место добавлено в понравившиеся", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Место добавлено в понравившиеся", Toast.LENGTH_SHORT).show()
         }
 
         createRouteBtn.setOnClickListener {

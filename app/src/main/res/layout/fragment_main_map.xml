@@ -135,7 +135,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginBottom="75dp"
+            android:layout_marginBottom="60dp"
             android:contentDescription="Геолокация"
             app:backgroundTint="#6A96F2"
             app:elevation="8dp"
