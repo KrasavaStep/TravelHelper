@@ -6,32 +6,19 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/Theme.TravelHelper.AppBarOverlay">
+    <!-- Старая верхняя панель (AppBarLayout) удалена -->
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/Theme.TravelHelper.PopupOverlay" />
+    <include layout="@layout/content_main" />
 
-    </com.google.android.material.appbar.AppBarLayout>
-
+    <!-- Список результатов поиска теперь прижат к самому верху, если Toolbar нет -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/search_results_recycler"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="?attr/actionBarSize"
         android:background="@android:color/white"
         android:elevation="8dp"
         android:visibility="gone"
         tools:itemCount="5"
-        tools:listitem="@android:layout/simple_list_item_1"
-        tools:visibility="visible" />
-
-    <include layout="@layout/content_main" />
+        tools:listitem="@android:layout/simple_list_item_1" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

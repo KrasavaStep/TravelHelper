@@ -72,7 +72,8 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         thisView = view
-        sharedViewModel = ViewModelProvider(this)[SharedViewModel::class.java]
+        // ВАЖНО: используем одну общую SharedViewModel на уровне Activity
+        sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
         
         setupMap()
         setupObservers()
@@ -90,8 +91,8 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
 
         setupRouteObservers()
 
-        val activitySharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
-        activitySharedViewModel.selectedAttraction.observe(viewLifecycleOwner) { attraction ->
+        // Слушаем выбор из поиска или карточки
+        sharedViewModel.selectedAttraction.observe(viewLifecycleOwner) { attraction ->
             if (attraction != null) {
                 showBottomSheet(attraction)
                 binding.mapView.mapWindow.map.move(
@@ -102,10 +103,13 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
             }
         }
 
-        sharedViewModel.dialogResult.observe(viewLifecycleOwner) { it ->
-            binding.routeInfoView.visibility = View.GONE
-            removeRoute()
-            calculateRoute(LatLng(it[1], it[0]))
+        // Слушаем команду на построение маршрута (из любой вкладки)
+        sharedViewModel.dialogResult.observe(viewLifecycleOwner) { coords ->
+            if (coords != null) {
+                binding.routeInfoView.visibility = View.GONE
+                removeRoute()
+                calculateRoute(LatLng(coords[1], coords[0]))
+            }
         }
 
         setupSearch()
@@ -130,9 +134,7 @@ class MainMapFragment : Fragment(), MainActivity.MenuConfig {
     }
 
     private fun setupClickListeners() {
-        binding.btnHome.setOnClickListener {
-            resetMapState()
-        }
+        binding.btnHome.setOnClickListener { resetMapState() }
 
         binding.fabLocationCustom.setOnClickListener {
             val lat = requireContext().getFromPrefs("lat", 52.4171724f).toDouble()

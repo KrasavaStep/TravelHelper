@@ -9,17 +9,18 @@ import android.location.LocationManager
 import android.os.Bundle
 import android.view.Menu
 import android.view.View
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -59,17 +60,22 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setSupportActionBar(binding.appBarMain.toolbar)
+        // Toolbar удален, поэтому ActionBar больше не настраиваем
+        // setSupportActionBar(binding.appBarMain.toolbar)
 
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
 
         appBarConfiguration = AppBarConfiguration(
-            setOf(R.id.nav_main_map, R.id.nav_liked_places, R.id.nav_settings, R.id.nav_about_app),
+            setOf(R.id.nav_main_map, R.id.nav_liked_places, R.id.nav_settings, R.id.nav_about_app, R.id.nav_routes),
             drawerLayout
         )
-        setupActionBarWithNavController(navController, appBarConfiguration)
+
+        // УДАЛЕНО: Этот метод вызывал падение, так как тулбара больше нет
+        // setupActionBarWithNavController(navController, appBarConfiguration)
+        
+        // Оставляем только связь NavigationView с контроллером для работы бокового меню
         navView.setupWithNavController(navController)
 
         setupSearchRecyclerView()
@@ -92,10 +98,11 @@ class MainActivity : AppCompatActivity() {
     private fun setupSearchRecyclerView() {
         searchResultsRecycler = binding.appBarMain.searchResultsRecycler
         searchAdapter = SearchAdapter { attraction ->
-            // Вместо Toast отправляем результат в SharedViewModel
             sharedViewModel.selectAttraction(attraction)
             searchResultsRecycler.visibility = View.GONE
-            searchView.onActionViewCollapsed()
+            if (::searchView.isInitialized) {
+                searchView.onActionViewCollapsed()
+            }
         }
         searchResultsRecycler.adapter = searchAdapter
         searchResultsRecycler.layoutManager = LinearLayoutManager(this)

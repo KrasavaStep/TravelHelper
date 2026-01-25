@@ -4,7 +4,6 @@ import com.example.travelhelper.data.data_model.AttractionModel
 import com.example.travelhelper.data.data_model.RouteModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.String
 
 class AttractionsRepository(private val attractionsDao: AtractionDao) {
 
@@ -23,6 +22,10 @@ class AttractionsRepository(private val attractionsDao: AtractionDao) {
 
     suspend fun addAttractionToDB(attraction: AttractionModel) {
         attractionsDao.addAttractionToDB(convertToAttractionEntity(attraction))
+    }
+
+    suspend fun deleteAttractionFromDB(attraction: AttractionModel) {
+        attractionsDao.deleteAttractionFromDB(attraction.name, attraction.latitude, attraction.longitude)
     }
 
     suspend fun getLikedAttractionsData(): List<AttractionModel> {

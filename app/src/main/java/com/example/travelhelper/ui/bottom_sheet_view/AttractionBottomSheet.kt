@@ -18,10 +18,13 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.fragment.findNavController
 import com.example.travelhelper.R
 import com.example.travelhelper.data.data_model.AttractionModel
+import com.example.travelhelper.ui.liked_places.LikedPlacesFragment
 import com.example.travelhelper.utils.SharedViewModel
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -34,6 +37,7 @@ class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFr
 
     private val viewModel by viewModel<BottomSheetViewModel>(named("bottomSheetViewModel"))
     private lateinit var sharedViewModel: SharedViewModel
+    private var isCurrentlyLiked: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,7 +49,9 @@ class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFr
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedViewModel = ViewModelProvider(requireParentFragment())[SharedViewModel::class.java]
+        // ВАЖНО: используем Activity для SharedViewModel, чтобы данные сохранялись при переходе между фрагментами
+        sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
+        isCurrentlyLiked = userData.isLiked
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -83,6 +89,8 @@ class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFr
         val createRouteBtn = view.findViewById<FloatingActionButton>(R.id.create_route_btn)
         val btnHome = view.findViewById<ImageButton>(R.id.btn_home)
 
+        updateLikeButtonState(likeBtn)
+
         view.findViewById<TextView>(R.id.name_txt).text = userData.name
         view.findViewById<TextView>(R.id.working_time_txt).text = if (!userData.openingHours.isNullOrEmpty()) {
             "${getString(R.string.opening_hours)}: ${userData.openingHours}"
@@ -117,24 +125,47 @@ class AttractionBottomSheet(val userData: AttractionModel) : BottomSheetDialogFr
         }
 
         closeBtn.setOnClickListener { dismiss() }
-
-        btnHome?.setOnClickListener {
-            dismiss()
-        }
+        btnHome?.setOnClickListener { dismiss() }
 
         likeBtn.setOnClickListener {
-            viewModel.addLikedAttractionToDb(userData)
-            Toast.makeText(requireContext(), "Место добавлено в понравившиеся", Toast.LENGTH_SHORT).show()
+            if (isCurrentlyLiked) {
+                viewModel.removeLikedAttractionFromDb(userData)
+                isCurrentlyLiked = false
+                updateLikeButtonState(likeBtn)
+                Toast.makeText(requireContext(), "Место удалено из избранного", Toast.LENGTH_SHORT).show()
+            } else {
+                viewModel.addLikedAttractionToDb(userData)
+                isCurrentlyLiked = true
+                updateLikeButtonState(likeBtn)
+                Toast.makeText(requireContext(), "Место добавлено в избранное", Toast.LENGTH_SHORT).show()
+            }
         }
 
         createRouteBtn.setOnClickListener {
+            // Передаем координаты цели в общую ViewModel
             sharedViewModel.setDialogResult(arrayOf(userData.longitude, userData.latitude))
+            
+            // Если мы находимся во вкладке "Любимые места", перебрасываем на карту
+            if (parentFragment is LikedPlacesFragment) {
+                findNavController().navigate(R.id.nav_main_map)
+            }
+            
             dismiss()
         }
 
         if (userData.isCustom) {
             createRouteBtn.visibility = View.GONE
             likeBtn.visibility = View.GONE
+        }
+    }
+
+    private fun updateLikeButtonState(likeBtn: ImageButton) {
+        if (isCurrentlyLiked) {
+            likeBtn.setImageResource(R.drawable.heart_active)
+            likeBtn.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+        } else {
+            likeBtn.setImageResource(R.drawable.heart_inactive)
+            likeBtn.setColorFilter(Color.WHITE)
         }
     }
 

@@ -1,6 +1,7 @@
 package com.example.travelhelper.data.db
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy.Companion.REPLACE
 import androidx.room.Query
@@ -10,6 +11,9 @@ import com.example.travelhelper.data.data_model.AttractionModel
 interface AtractionDao {
     @Insert(onConflict = REPLACE)
     suspend fun addAttractionToDB(item: AttractionEntity)
+
+    @Query("DELETE FROM ATRACTIONS_TABLE WHERE name = :attractionName AND latitude = :lat AND longitude = :lon")
+    suspend fun deleteAttractionFromDB(attractionName: String, lat: Double, lon: Double)
 
     @Query("SELECT * FROM ATRACTIONS_TABLE")
     suspend fun getAllAttractions(): List<AttractionEntity>
